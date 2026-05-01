@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #020617;
+  --color-accent: #22D3EE;
+  --color-purple: #A855F7;
+  --color-growth: #4ADE80;
+  --color-warning: #F59E0B;
+  --color-danger: #EF4444;
+  --color-soft: #0F172A;
+  --color-card: rgba(15, 23, 42, 0.8);
+  
+  --font-heading: "Inter", sans-serif;
+  --font-body: "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  
+  --radius-xl: 16px;
+  --radius-lg: 12px;
+}
+
+:root {
+  --background: #020617;
+  --foreground: #F8FAFC;
+  --card: rgba(15, 23, 42, 0.8);
+  --card-foreground: #F8FAFC;
+  --primary: #020617;
+  --primary-foreground: #FFFFFF;
+  --secondary: #A855F7;
+  --accent: #22D3EE;
+  --border: #1E293B;
+  --ring: #22D3EE;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body);
+  background-image: 
+    radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+    radial-gradient(at 50% 0%, hsla(225,39%,30%,0.1) 0, transparent 50%);
+  background-attachment: fixed;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-body);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading);
+}
+
+.mono {
+  font-family: var(--font-mono);
+}
