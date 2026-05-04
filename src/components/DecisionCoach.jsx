@@ -2,8 +2,21 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Terminal, Zap, Shield, ArrowRight, Loader2, RefreshCcw, CheckCircle2, AlertTriangle, Brain, Sparkles, TrendingUp, Circle } from 'lucide-react';
+import { Terminal, Zap, Shield, ArrowRight, Loader2, RefreshCcw, CheckCircle2, AlertTriangle, Brain, Sparkles, TrendingUp, Circle, Box } from 'lucide-react';
 import { useMindStore } from '@/lib/store';
+import dynamic from 'next/dynamic';
+
+const DecisionSimulator = dynamic(() => import('./DecisionSimulator'), { 
+  ssr: false,
+  loading: () => (
+    <div className="flex flex-col items-center justify-center min-h-[60vh] bg-black rounded-[3rem]">
+      <Loader2 className="w-16 h-16 text-primary animate-spin mb-8" />
+      <h2 className="text-3xl font-heading font-black uppercase tracking-tighter text-white/40 text-center px-6">
+        Initializing Quantum Canvas...
+      </h2>
+    </div>
+  )
+});
 
 export default function DecisionCoach() {
   const { userProfile, addXP } = useMindStore();
@@ -18,6 +31,7 @@ export default function DecisionCoach() {
   const [persona, setPersona] = useState('Pragmatist');
   const [clarityBefore, setClarityBefore] = useState(5);
   const [clarityAfter, setClarityAfter] = useState(null);
+  const [showSimulator, setShowSimulator] = useState(false);
 
   const PERSONAS = [
     { id: 'Pragmatist', name: 'The Pragmatist', desc: 'Cold logic & efficiency', icon: <Brain className="w-5 h-5" /> },
@@ -394,12 +408,33 @@ export default function DecisionCoach() {
                )}
             </div>
 
-            <button 
-              onClick={() => { setStep('input'); setDecision(''); setAnswers({}); setResult(null); setCommitted(false); setClarityAfter(null); }}
-              className="w-full py-8 bg-soft border border-border rounded-[2.5rem] text-[10px] font-black uppercase tracking-[0.3em] hover:border-primary transition-all text-foreground/60 hover:text-primary flex items-center justify-center gap-4"
-            >
-              <RefreshCcw className="w-5 h-5" /> Start New Analysis
-            </button>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <button 
+                onClick={() => setShowSimulator(true)}
+                className="w-full py-8 bg-black text-white rounded-[2.5rem] text-[10px] font-black uppercase tracking-[0.3em] hover:bg-zinc-900 transition-all flex items-center justify-center gap-4 border border-white/10"
+              >
+                <Box className="w-5 h-5 text-primary" /> Simulate 3D Future
+              </button>
+              <button 
+                onClick={() => { setStep('input'); setDecision(''); setAnswers({}); setResult(null); setCommitted(false); setClarityAfter(null); }}
+                className="w-full py-8 bg-soft border border-border rounded-[2.5rem] text-[10px] font-black uppercase tracking-[0.3em] hover:border-primary transition-all text-foreground/60 hover:text-primary flex items-center justify-center gap-4"
+              >
+                <RefreshCcw className="w-5 h-5" /> Start New Analysis
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {showSimulator && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="fixed inset-0 z-[200] bg-black p-4 md:p-8"
+          >
+            <DecisionSimulator 
+              decision={decision} 
+              onBack={() => setShowSimulator(false)} 
+            />
           </motion.div>
         )}
       </AnimatePresence>

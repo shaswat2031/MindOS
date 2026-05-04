@@ -31,13 +31,14 @@ export async function POST(req) {
       answer
     });
 
-    // Award XP and increment streak
+    // Award XP and update last check-in
     await User.findOneAndUpdate(
       { clerkId: user.id },
       { 
         $inc: { xp: 20 },
         $set: { lastCheckIn: new Date() }
-      }
+      },
+      { returnDocument: 'after' }
     );
 
     return NextResponse.json({ success: true, checkIn });

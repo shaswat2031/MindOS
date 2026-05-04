@@ -16,13 +16,18 @@ import {
   Loader2, 
   AlertCircle,
   MessageSquare,
-  Zap
+  Zap,
+  Box
 } from 'lucide-react';
+import dynamic from 'next/dynamic';
+
+const DecisionSimulator = dynamic(() => import('./DecisionSimulator'), { ssr: false });
 
 export default function DecisionHistory() {
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedLog, setSelectedLog] = useState(null);
+  const [simulatingDecision, setSimulatingDecision] = useState(null);
   const [updating, setUpdating] = useState(null);
 
   useEffect(() => {
@@ -95,10 +100,8 @@ export default function DecisionHistory() {
     );
   }
 
-
   return (
     <div className="space-y-12">
-      {/* Neural Log Modal */}
       <AnimatePresence>
         {selectedLog && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-12">
@@ -126,7 +129,6 @@ export default function DecisionHistory() {
                 </div>
                 <h2 className="text-4xl md:text-7xl font-heading font-black text-foreground tracking-tighter uppercase leading-[0.8] mb-12">{selectedLog.question}</h2>
               </div>
-
 
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 md:gap-20">
                 <section className="space-y-12 md:space-y-16">
@@ -158,7 +160,6 @@ export default function DecisionHistory() {
                     <p className="text-xl md:text-2xl font-heading font-bold text-foreground leading-relaxed">"{selectedLog.analysis.fearAnalysis}"</p>
                   </div>
                 </section>
-
 
                 <section className="bg-primary p-12 md:p-16 rounded-[4rem] text-white shadow-xl shadow-primary/20 h-fit">
                    <h4 className="text-[10px] font-black uppercase tracking-[0.3em] mb-10 opacity-60">Next Action Steps</h4>
@@ -207,7 +208,6 @@ export default function DecisionHistory() {
         </div>
       </div>
 
-
       <div className="grid grid-cols-1 gap-8">
         {history.map((item, idx) => {
           const isDelayed = item.outcomeStatus === 'awaiting' && (new Date() - new Date(item.createdAt)) / (1000 * 60 * 60 * 24) >= 7;
@@ -228,7 +228,6 @@ export default function DecisionHistory() {
               )}
 
               <div className="flex flex-col xl:flex-row xl:items-center justify-between gap-8 md:gap-12">
-
                 <div className="flex-1">
                   <div className="flex flex-wrap items-center gap-6 mb-8">
                     <div className={`px-6 py-2 rounded-full text-[9px] font-black uppercase tracking-[0.2em] shadow-sm ${
@@ -268,55 +267,74 @@ export default function DecisionHistory() {
                       </div>
                     )}
 
-                  <span className="text-[9px] font-black text-foreground/40 uppercase tracking-[0.3em] flex items-center gap-2 ml-auto">
-                    {new Date(item.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
-                  </span>
-                </div>
-                
-                <h3 className="text-4xl md:text-5xl font-heading font-black text-foreground tracking-tighter group-hover:text-primary transition-colors leading-[0.85] uppercase">
-                  {item.question}
-                </h3>
-              </div>
-
-              <div className="flex items-center gap-12">
-                 <div className="flex items-center gap-8">
-                    <div className="text-center">
-                       <p className="text-[9px] font-black text-foreground/40 uppercase tracking-[0.2em] mb-4">Choice Impact</p>
-                       <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center transition-all mx-auto ${
-                         item.analysis?.verdict?.includes('NO-GO') ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-500'
-                       }`}>
-                         {item.analysis?.verdict?.includes('NO-GO') ? <TrendingDown className="w-8 h-8" /> : <TrendingUp className="w-8 h-8" />}
-                       </div>
-                    </div>
-                 </div>
-                 
-                 <div className="w-16 h-16 bg-soft rounded-[2rem] flex items-center justify-center text-foreground/40 group-hover:bg-primary group-hover:text-white transition-all shadow-sm">
-                   <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
-                 </div>
-              </div>
-            </div>
-
-            {item.analysis?.qualityScore && (
-              <div className="mt-12 pt-10 border-t border-border flex flex-col md:flex-row md:items-center justify-between gap-8">
-                <div className="flex items-center gap-8 flex-1">
-                  <div className="text-[9px] font-black text-foreground/40 uppercase tracking-[0.3em]">Thinking Clarity</div>
-                  <div className="flex-1 max-w-sm h-1.5 bg-soft rounded-full overflow-hidden">
-                    <motion.div 
-                      initial={{ width: 0 }}
-                      animate={{ width: `${item.analysis.qualityScore}%` }}
-                      className="h-full bg-primary" 
-                    />
+                    <span className="text-[9px] font-black text-foreground/40 uppercase tracking-[0.3em] flex items-center gap-4 ml-auto">
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); setSimulatingDecision(item.question); }}
+                        className="flex items-center gap-2 px-4 py-2 bg-black text-white rounded-full hover:scale-105 transition-all shadow-lg"
+                      >
+                        <Box className="w-3 h-3" />
+                        <span>3D Roadmap</span>
+                      </button>
+                      {new Date(item.createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })}
+                    </span>
                   </div>
-                  <div className="text-xl font-heading font-black text-foreground leading-none">{item.analysis.qualityScore}%</div>
+                  
+                  <h3 className="text-4xl md:text-5xl font-heading font-black text-foreground tracking-tighter group-hover:text-primary transition-colors leading-[0.85] uppercase">
+                    {item.question}
+                  </h3>
                 </div>
-                <div className="flex items-center gap-3 text-[9px] font-black uppercase tracking-[0.3em] text-foreground/40 italic">
-                  {item.persona || 'Realist'} Perspective
+
+                <div className="flex items-center gap-12">
+                   <div className="flex items-center gap-8">
+                      <div className="text-center">
+                         <p className="text-[9px] font-black text-foreground/40 uppercase tracking-[0.2em] mb-4">Choice Impact</p>
+                         <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center transition-all mx-auto ${
+                           item.analysis?.verdict?.includes('NO-GO') ? 'bg-red-50 text-red-500' : 'bg-green-50 text-green-500'
+                         }`}>
+                           {item.analysis?.verdict?.includes('NO-GO') ? <TrendingDown className="w-8 h-8" /> : <TrendingUp className="w-8 h-8" />}
+                         </div>
+                      </div>
+                   </div>
+                   
+                   <div className="w-16 h-16 bg-soft rounded-[2rem] flex items-center justify-center text-foreground/40 group-hover:bg-primary group-hover:text-white transition-all shadow-sm">
+                     <ArrowRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
+                   </div>
                 </div>
               </div>
-            )}
-          </motion.div>
-        ))}
+
+              {item.analysis?.qualityScore && (
+                <div className="mt-12 pt-10 border-t border-border flex flex-col md:flex-row md:items-center justify-between gap-8">
+                  <div className="flex items-center gap-8 flex-1">
+                    <div className="text-[9px] font-black text-foreground/40 uppercase tracking-[0.3em]">Thinking Clarity</div>
+                    <div className="flex-1 max-w-sm h-1.5 bg-soft rounded-full overflow-hidden">
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${item.analysis.qualityScore}%` }}
+                        className="h-full bg-primary" 
+                      />
+                    </div>
+                    <div className="text-xl font-heading font-black text-foreground leading-none">{item.analysis.qualityScore}%</div>
+                  </div>
+                  <div className="flex items-center gap-3 text-[9px] font-black uppercase tracking-[0.3em] text-foreground/40 italic">
+                    {item.persona || 'Realist'} Perspective
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          );
+        })}
       </div>
+
+      <AnimatePresence>
+        {simulatingDecision && (
+          <div className="fixed inset-0 z-[110] bg-black">
+            <DecisionSimulator 
+              decision={simulatingDecision} 
+              onBack={() => setSimulatingDecision(null)} 
+            />
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

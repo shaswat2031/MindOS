@@ -22,6 +22,13 @@ const UserProfileSchema = new mongoose.Schema({
   level: { type: Number, default: 1 },
   streak: { type: Number, default: 0 },
   lastCheckIn: Date,
+  gender: { type: String, enum: ['Male', 'Female', 'Other'] },
+  age: Number,
+  dob: String,
+  occupation: String,
+  fitnessLevel: String,
+  workLoad: String,
+  socialMediaTime: Number,
   createdAt: { type: Date, default: Date.now },
 });
 

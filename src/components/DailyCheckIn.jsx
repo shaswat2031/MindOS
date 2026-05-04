@@ -6,12 +6,12 @@ import { HelpCircle, Send, CheckCircle2, Sparkles, Loader2, ArrowRight } from 'l
 import { useMindStore } from '@/lib/store';
 
 const QUESTIONS = [
+  "What is the most high-leverage thing you can do in the next hour?",
   "What are you avoiding today?",
   "What decision are you delaying?",
   "What's the one thing that would make everything else easier?",
   "What are you dreading most right now?",
   "If you had infinite courage, what would you do today?",
-  "What is the most high-leverage thing you can do in the next hour?",
   "Is your current mood influencing your logic? (Be honest)",
 ];
 
