@@ -2,195 +2,121 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Zap, 
-  Target, 
-  ArrowRight, 
-  Activity, 
-  Battery, 
-  Flame, 
-  Smile, 
-  MessageSquare,
-  CheckCircle2,
-  XCircle,
-  Loader2
-} from 'lucide-react';
+import { HelpCircle, Send, CheckCircle2, Sparkles, Loader2, ArrowRight } from 'lucide-react';
 import { useMindStore } from '@/lib/store';
 
-export default function DailyCheckIn({ onComplete }) {
-  const { addXP } = useMindStore();
-  const [step, setStep] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [flowType, setFlowType] = useState('morning'); // 'morning' or 'evening'
-  const [questions, setQuestions] = useState([]);
-  const [answers, setAnswers] = useState({});
-  const [morningData, setMorningData] = useState(null);
+const QUESTIONS = [
+  "What are you avoiding today?",
+  "What decision are you delaying?",
+  "What's the one thing that would make everything else easier?",
+  "What are you dreading most right now?",
+  "If you had infinite courage, what would you do today?",
+  "What is the most high-leverage thing you can do in the next hour?",
+  "Is your current mood influencing your logic? (Be honest)",
+];
+
+export default function DailyCheckIn({ onClose }) {
+  const { addXP, userProfile } = useMindStore();
+  const [question, setQuestion] = useState("");
+  const [answer, setAnswer] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [completed, setCompleted] = useState(false);
 
   useEffect(() => {
-    const initFlow = async () => {
-      try {
-        const res = await fetch('/api/checkins/daily-plan');
-        const data = await res.json();
-        setQuestions(data.questions);
-        setFlowType(data.type);
-        setMorningData(data.morningData);
-      } catch (err) {
-        setQuestions(["What is your primary focus?", "One thing you will ignore?", "Energy level check?"]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    initFlow();
+    // Pick a random question for the day
+    const dayOfYear = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 1000 / 60 / 60 / 24);
+    setQuestion(QUESTIONS[dayOfYear % QUESTIONS.length]);
   }, []);
 
-  const handleNext = (val) => {
-    const currentQ = step === 0 ? 'energy' : step === 1 ? 'mood' : questions[step - 2];
-    setAnswers(prev => ({ ...prev, [currentQ]: val }));
-    
-    if (step < questions.length + 1) {
-      setStep(step + 1);
-    } else {
-      submitCheckIn();
-    }
-  };
-
-  const submitCheckIn = async () => {
+  const handleSubmit = async () => {
+    if (!answer.trim()) return;
     setLoading(true);
     try {
-      await fetch('/api/checkins', {
+      const res = await fetch('/api/user/daily-checkin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          ...answers,
-          type: flowType
-        })
+        body: JSON.stringify({ question, answer })
       });
-      addXP(flowType === 'morning' ? 20 : 30);
-      onComplete?.();
+      if (res.ok) {
+        setCompleted(true);
+        addXP(20);
+        setTimeout(() => onClose(), 2000);
+      }
     } catch (err) {
-      console.error("Submission failed", err);
-      onComplete?.();
+      console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center py-20">
-        <Loader2 className="w-12 h-12 text-accent animate-spin mb-4" />
-        <p className="text-xs font-black uppercase tracking-widest text-slate-500">Syncing Mindset Data...</p>
-      </div>
-    );
-  }
-
-  if (flowType === 'evening') {
-    return (
-      <div className="max-w-xl mx-auto py-10">
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-[#0F172A]/80 backdrop-blur-2xl p-12 rounded-[3rem] border border-white/5 shadow-2xl text-center"
-        >
-          <div className="mb-10 inline-flex p-6 bg-growth/10 rounded-[2rem]">
-            <Flame className="w-8 h-8 text-growth" />
-          </div>
-          <h2 className="text-4xl font-black mb-12 uppercase italic tracking-tighter text-white leading-none">
-            Evening <br/> <span className="text-accent">Reflection</span>
-          </h2>
-          
-          <div className="mb-10 text-left bg-white/5 p-6 rounded-2xl border border-white/10">
-            <p className="text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Morning Intention</p>
-            <p className="text-lg font-bold italic text-white">"{morningData?.intentions?.[0] || "Stay Focused"}"</p>
-          </div>
-
-          <p className="text-slate-400 mb-10 font-bold italic">Did you follow through on your intention today?</p>
-          
-          <div className="grid grid-cols-2 gap-4">
-            <button 
-              onClick={() => submitCheckIn()}
-              className="flex flex-col items-center gap-4 p-8 rounded-3xl bg-growth/10 border border-growth/20 hover:bg-growth/20 transition-all group"
-            >
-              <CheckCircle2 className="w-10 h-10 text-growth group-hover:scale-110 transition-transform" />
-              <span className="font-black text-xs uppercase tracking-widest text-growth">Executed</span>
-            </button>
-            <button 
-              onClick={() => submitCheckIn()}
-              className="flex flex-col items-center gap-4 p-8 rounded-3xl bg-danger/10 border border-danger/20 hover:bg-danger/20 transition-all group"
-            >
-              <XCircle className="w-10 h-10 text-danger group-hover:scale-110 transition-transform" />
-              <span className="font-black text-xs uppercase tracking-widest text-danger">Failed</span>
-            </button>
-          </div>
-        </motion.div>
-      </div>
-    );
-  }
-
   return (
-    <div className="max-w-xl mx-auto py-10">
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={step}
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 1.05 }}
-          className="bg-[#0F172A]/80 backdrop-blur-2xl p-12 rounded-[3rem] border border-white/5 shadow-2xl text-center relative overflow-hidden"
-        >
-          {/* Progress Bar */}
-          <div className="absolute top-0 left-0 w-full h-1.5 bg-white/5">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-background/80 backdrop-blur-xl">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.9, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        className="bg-white border border-border p-8 md:p-12 max-w-xl w-full rounded-[3rem] shadow-2xl relative overflow-hidden"
+      >
+        <AnimatePresence mode="wait">
+          {!completed ? (
             <motion.div 
-              className="h-full bg-accent shadow-[0_0_10px_rgba(34,211,238,0.5)]"
-              initial={{ width: 0 }}
-              animate={{ width: `${((step + 1) / (questions.length + 2)) * 100}%` }}
-            />
-          </div>
-
-          <div className="mb-10 inline-flex p-6 bg-white/5 rounded-[2rem] shadow-[0_0_20px_rgba(255,255,255,0.05)]">
-            {step === 0 ? <Battery className="w-8 h-8 text-accent" /> : 
-             step === 1 ? <Smile className="w-8 h-8 text-purple-400" /> : 
-             <MessageSquare className="w-8 h-8 text-growth" />}
-          </div>
-
-          <h2 className="text-4xl font-black mb-12 uppercase italic tracking-tighter text-white leading-none min-h-[5rem]">
-            {step === 0 ? "Energy State" : 
-             step === 1 ? "Current Mood" : 
-             questions[step - 2]}
-          </h2>
-
-          <div className="grid gap-4">
-            {step < 2 ? (
-              <div className="grid grid-cols-5 gap-2">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(val => (
-                  <button
-                    key={val}
-                    onClick={() => handleNext(val)}
-                    className="aspect-square flex items-center justify-center rounded-xl bg-white/5 border border-white/5 hover:border-accent hover:text-accent font-black text-lg transition-all active:scale-90"
-                  >
-                    {val}
-                  </button>
-                ))}
+              key="input"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <div className="flex items-center gap-3 mb-8">
+                 <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
+                    <HelpCircle className="w-6 h-6" />
+                 </div>
+                 <p className="text-[10px] font-black text-foreground/40 uppercase tracking-[0.3em]">Daily Clarity Probe</p>
               </div>
-            ) : (
-              <div className="space-y-4">
-                <input 
-                  type="text" 
-                  autoFocus
-                  placeholder="TYPE RESPONSE..."
-                  className="w-full p-6 bg-white/5 border border-white/10 rounded-2xl outline-none focus:border-accent font-bold uppercase tracking-widest text-white text-center"
-                  onKeyPress={(e) => {
-                    if (e.key === 'Enter') handleNext(e.target.value);
-                  }}
-                />
-                <p className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Press Enter to Proceed</p>
+
+              <h2 className="text-3xl md:text-4xl font-heading font-black uppercase tracking-tighter leading-tight mb-10 text-foreground">
+                {question}
+              </h2>
+
+              <textarea 
+                value={answer}
+                onChange={(e) => setAnswer(e.target.value)}
+                placeholder="Write your raw, unfiltered truth..."
+                className="w-full h-40 bg-soft border border-border rounded-3xl p-6 text-lg font-heading font-bold text-foreground placeholder:text-foreground/20 outline-none focus:border-primary transition-all mb-8 resize-none"
+              />
+
+              <div className="flex gap-4">
+                <button 
+                  onClick={onClose}
+                  className="flex-1 py-5 border border-border rounded-2xl text-[10px] font-black uppercase tracking-widest text-foreground/40 hover:border-primary transition-all"
+                >
+                  Skip for now
+                </button>
+                <button 
+                  onClick={handleSubmit}
+                  disabled={loading || !answer.trim()}
+                  className="flex-[2] py-5 bg-primary text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] transition-all flex items-center justify-center gap-3 disabled:opacity-30"
+                >
+                  {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-4 h-4" /> Log Truth</>}
+                </button>
               </div>
-            )}
-          </div>
-          
-          <div className="mt-12 flex justify-center gap-2 opacity-30">
-            <Activity className="w-4 h-4" />
-            <span className="text-[10px] font-black uppercase tracking-[0.2em]">Neural Sync Active</span>
-          </div>
-        </motion.div>
-      </AnimatePresence>
+            </motion.div>
+          ) : (
+            <motion.div 
+              key="success"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="text-center py-12"
+            >
+              <div className="w-20 h-20 bg-green-50 border border-green-100 rounded-full flex items-center justify-center mx-auto mb-8">
+                <CheckCircle2 className="w-10 h-10 text-green-500" />
+              </div>
+              <h2 className="text-3xl font-heading font-black uppercase tracking-tighter mb-4 text-foreground">Truth Logged</h2>
+              <p className="text-primary font-bold uppercase tracking-widest text-[10px] mb-8">+20 XP Awarded for Self-Honesty</p>
+              <div className="flex items-center justify-center gap-3 text-foreground/40 text-[9px] font-black uppercase tracking-widest">
+                <Sparkles className="w-4 h-4" /> Synthesizing weekly patterns...
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
     </div>
   );
 }

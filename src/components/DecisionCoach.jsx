@@ -1,180 +1,408 @@
 'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Send, Bot, User, HelpCircle, Terminal, Shield, Zap, RefreshCcw, Loader2 } from 'lucide-react';
+import { Terminal, Zap, Shield, ArrowRight, Loader2, RefreshCcw, CheckCircle2, AlertTriangle, Brain, Sparkles, TrendingUp, Circle } from 'lucide-react';
 import { useMindStore } from '@/lib/store';
 
 export default function DecisionCoach() {
   const { userProfile, addXP } = useMindStore();
-  const [messages, setMessages] = useState([
-    {
-      role: 'assistant',
-      content: "SYSTEM ONLINE. I am your Decision Engine. Input the variables of your current crossroads. What is the choice you are contemplating?"
-    }
-  ]);
-  const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [step, setStep] = useState(0); // 0: Initial, 1-5: Layered Questions, 6: Final Clarity
-  const [decisionContext, setDecisionContext] = useState(null);
-  
-  const scrollRef = useRef(null);
+  const [step, setStep] = useState('input'); // 'input', 'diagnostic', 'results'
+  const [decision, setDecision] = useState('');
+  const [questions, setQuestions] = useState([]);
+  const [answers, setAnswers] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+  const [committing, setCommitting] = useState(false);
+  const [committed, setCommitted] = useState(false);
+  const [persona, setPersona] = useState('Pragmatist');
+  const [clarityBefore, setClarityBefore] = useState(5);
+  const [clarityAfter, setClarityAfter] = useState(null);
 
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages, isLoading]);
+  const PERSONAS = [
+    { id: 'Pragmatist', name: 'The Pragmatist', desc: 'Cold logic & efficiency', icon: <Brain className="w-5 h-5" /> },
+    { id: 'Stoic', name: 'The Stoic', desc: 'Control & resilience', icon: <Shield className="w-5 h-5" /> },
+    { id: 'VC', name: 'The VC', desc: 'Leverage & asymmetric ROI', icon: <TrendingUp className="w-5 h-5" /> },
+    { id: 'IndianMentor', name: 'The Indian Mentor', desc: 'Street-smart & cultural wisdom', icon: <Sparkles className="w-5 h-5" /> }
+  ];
 
-  const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
-
-    const userMessage = { role: 'user', content: input };
-    setMessages(prev => [...prev, userMessage]);
-    setInput('');
-    setIsLoading(true);
-
+  const startDiagnostics = async () => {
+    if (!decision.trim()) return;
+    setLoading(true);
     try {
-      const res = await fetch('/api/decisions/chat', {
+      const res = await fetch('/api/decisions/generate-questions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          messages: [...messages, userMessage],
-          step,
-          userProfile 
-        })
+        body: JSON.stringify({ decision, userProfile, persona })
       });
-      
       const data = await res.json();
-      
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: data.content
-      }]);
-      
-      setStep(data.nextStep);
-      
-      if (data.nextStep === 6) {
-        addXP(50); // Reward for completing a decision cycle
+      if (res.ok && data && data.questions) {
+        setQuestions(data.questions);
+        setStep('clarity-pre');
+      } else {
+        alert("Neural Analysis Error: " + (data.error || "Please try again shortly."));
       }
-    } catch (error) {
-      console.error("Decision engine error:", error);
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: "ERROR: LOGIC LOOP DETECTED. Please re-state your input."
-      }]);
+    } catch (err) {
+      console.error("Failed to generate questions", err);
+      alert("System Connection Error. Please retry.");
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
+  const getVerdict = async () => {
+    if (Object.keys(answers).length < questions.length) return;
+    setLoading(true);
+    try {
+      const res = await fetch('/api/decisions/analyze', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          decision, 
+          answers, 
+          questions, 
+          userProfile, 
+          persona,
+          clarityBefore 
+        })
+      });
+      const data = await res.json();
+      setResult(data);
+      setStep('results');
+      addXP(50);
+    } catch (err) {
+      console.error("Analysis failed", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const saveClarityAfter = async (val) => {
+    setClarityAfter(val);
+    if (!result?.decisionId) return;
+    try {
+      await fetch('/api/decisions/update-clarity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ decisionId: result.decisionId, clarityAfter: val })
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const commitToDecision = async (days) => {
+    if (!result?.decisionId) return;
+    setCommitting(true);
+    try {
+      const res = await fetch('/api/decisions/commit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ decisionId: result.decisionId, deadlineDays: days })
+      });
+      if (res.ok) {
+        setCommitted(true);
+        addXP(100); 
+      }
+    } catch (err) {
+      console.error("Commitment failed", err);
+    } finally {
+      setCommitting(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <Loader2 className="w-16 h-16 text-primary animate-spin mb-8" />
+        <h2 className="text-3xl font-heading font-black uppercase tracking-tighter text-foreground/40 animate-pulse">
+          {step === 'input' ? 'Synthesizing Decision Matrix...' : 'Calculating Logic Verdict...'}
+        </h2>
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-4xl mx-auto flex flex-col h-[80vh] bg-[#0F172A]/80 backdrop-blur-2xl rounded-[2.5rem] border border-white/5 overflow-hidden shadow-2xl relative">
-      {/* Decorative Glows */}
-      <div className="absolute -top-24 -left-24 w-64 h-64 bg-accent/10 rounded-full blur-[100px]" />
-      <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-purple-500/10 rounded-full blur-[100px]" />
+    <div className="max-w-4xl mx-auto pb-20">
+      <AnimatePresence mode="wait">
+        {step === 'input' && (
+          <motion.div
+            key="input"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="bg-white p-6 md:p-12 rounded-[2.5rem] md:rounded-[3.5rem] border border-border shadow-sm relative overflow-hidden"
+          >
 
-      <div className="p-8 border-b border-white/5 bg-white/5 flex items-center justify-between relative z-10">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-accent rounded-2xl flex items-center justify-center shadow-[0_0_20px_rgba(34,211,238,0.3)]">
-            <Terminal className="w-6 h-6 text-black" />
-          </div>
-          <div>
-            <h2 className="font-black text-xl uppercase italic tracking-tighter">Decision Engine v2.0</h2>
-            <div className="flex items-center gap-2">
-              <span className={`w-2 h-2 rounded-full animate-pulse ${step === 6 ? 'bg-growth' : 'bg-accent'}`} />
-              <p className="text-[10px] font-black text-accent uppercase tracking-widest">
-                {step === 0 ? 'AWAITING INPUT' : step === 6 ? 'CLARITY REACHED' : `LAYER 0${step} ANALYSIS`}
-              </p>
-            </div>
-          </div>
-        </div>
-        <button 
-          onClick={() => { setMessages([{ role: 'assistant', content: "SYSTEM RESET. What is the new decision?" }]); setStep(0); }}
-          className="p-3 bg-white/5 hover:bg-white/10 rounded-xl transition-colors text-slate-500 hover:text-accent"
-        >
-          <RefreshCcw className="w-5 h-5" />
-        </button>
-      </div>
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-16">
+                <div>
+                  <div className="flex items-center gap-2 px-3 py-1 bg-soft border border-border rounded-full w-fit mb-6">
+                    <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
+                    <span className="text-[9px] font-black text-foreground/60 uppercase tracking-[0.2em]">Smart Coaching v3.0</span>
+                  </div>
+                  <h2 className="text-4xl md:text-5xl font-heading font-black uppercase tracking-tighter leading-[0.9] text-foreground">
+                    Let's check <br/> your <span className="text-primary italic font-cursive normal-case px-2">choice</span>
+                  </h2>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-8 space-y-8 relative z-10 scrollbar-hide scroll-smooth">
-        <AnimatePresence initial={false}>
-          {messages.map((m, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, x: m.role === 'assistant' ? -20 : 20, y: 10 }}
-              animate={{ opacity: 1, x: 0, y: 0 }}
-              className={`flex ${m.role === 'assistant' ? 'justify-start' : 'justify-end'}`}
-            >
-              <div className={`max-w-[85%] flex flex-col ${m.role === 'assistant' ? 'items-start' : 'items-end'}`}>
-                <div className={`p-6 rounded-[2rem] ${
-                  m.role === 'assistant' 
-                    ? 'bg-white/5 border border-white/10 text-slate-200 rounded-tl-none leading-relaxed' 
-                    : 'bg-accent text-black font-bold rounded-tr-none shadow-[0_0_20px_rgba(34,211,238,0.2)]'
-                }`}>
-                  <p className="text-sm md:text-base tracking-tight whitespace-pre-wrap">{m.content}</p>
                 </div>
-                <span className="text-[8px] font-black text-slate-600 uppercase tracking-widest mt-3 px-2">
-                  {m.role === 'assistant' ? 'ENGINE_CORE' : 'NEURAL_INPUT'}
-                </span>
+                <div className="hidden md:block">
+                  <div className="w-20 h-20 bg-soft border border-border rounded-[2rem] flex items-center justify-center">
+                    <Brain className="w-10 h-10 text-primary/60" />
+                  </div>
+                </div>
               </div>
-            </motion.div>
-          ))}
-        </AnimatePresence>
-        {isLoading && (
-          <div className="flex justify-start">
-            <div className="bg-white/5 p-6 rounded-3xl rounded-tl-none flex gap-3">
-              <Loader2 className="w-5 h-5 text-accent animate-spin" />
-              <span className="text-[10px] font-black text-accent uppercase tracking-widest self-center">Processing Logic Layers...</span>
-            </div>
-          </div>
-        )}
-      </div>
 
-      <div className="p-8 border-t border-white/5 bg-[#020617]/50 backdrop-blur-xl relative z-10">
-        {step === 6 ? (
-          <div className="text-center py-4">
-            <p className="text-growth font-black uppercase tracking-[0.3em] mb-6 flex items-center justify-center gap-2">
-              <Zap className="w-5 h-5" /> Decision History Saved
-            </p>
-            <button 
-              onClick={() => { setMessages([{ role: 'assistant', content: "SYSTEM RESET. What is the next choice?" }]); setStep(0); }}
-              className="px-10 py-4 bg-white/5 border border-white/10 hover:border-accent text-white font-black uppercase tracking-widest text-xs rounded-2xl transition-all"
-            >
-              Start New Analysis
-            </button>
-          </div>
-        ) : (
-          <div className="flex gap-4 p-2 bg-white/5 border border-white/10 rounded-2xl focus-within:border-accent/50 transition-all">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-              placeholder={step === 0 ? "EX: SHOULD I QUIT MY JOB?" : "INPUT YOUR RESPONSE..."}
-              className="flex-1 p-3 bg-transparent outline-none text-xs font-bold uppercase tracking-widest text-white placeholder:text-slate-600"
-              disabled={isLoading}
-            />
-            <button
-              onClick={handleSend}
-              disabled={!input.trim() || isLoading}
-              className="p-4 bg-accent text-black rounded-xl hover:scale-105 active:scale-95 transition-all shadow-lg disabled:opacity-50"
-            >
-              <Send className="w-5 h-5 stroke-[3px]" />
-            </button>
-          </div>
+              <textarea 
+                value={decision}
+                onChange={(e) => setDecision(e.target.value)}
+                placeholder="EX: SHOULD I QUIT MY TECH JOB TO START A ROASTERY?"
+                className="w-full h-48 md:h-64 bg-soft border border-border rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-10 text-xl md:text-2xl font-heading font-bold tracking-tight text-foreground placeholder:text-foreground/30 outline-none focus:border-primary transition-all mb-12 resize-none"
+              />
+
+
+              <div className="mb-12">
+                <p className="text-[10px] font-black text-foreground/60 uppercase tracking-[0.3em] mb-6">Select AI Mentor Persona</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {PERSONAS.map((p) => {
+                    const isLocked = p.id !== 'Pragmatist' && userProfile?.plan !== 'Growth';
+                    return (
+                      <button
+                        key={p.id}
+                        onClick={() => !isLocked && setPersona(p.id)}
+                        className={`p-8 rounded-3xl border text-left transition-all relative group ${
+                          persona === p.id 
+                          ? 'bg-primary border-primary text-white shadow-xl' 
+                          : 'bg-white border-border text-foreground/60 hover:border-primary/50'
+                        } ${isLocked ? 'opacity-40 cursor-not-allowed' : ''}`}
+                      >
+                        <div className={`mb-4 transition-colors ${persona === p.id ? 'text-white' : 'text-primary'}`}>
+                          {p.icon}
+                        </div>
+                        <div className="font-heading font-black uppercase text-[10px] tracking-[0.2em] mb-1">{p.name}</div>
+                        <div className={`text-[9px] font-bold ${persona === p.id ? 'text-white/80' : 'text-foreground/40'}`}>{p.desc}</div>
+                        {isLocked && (
+                          <div className="absolute top-4 right-4">
+                            <Shield className="w-3 h-3 text-foreground/40" />
+                          </div>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <button 
+                onClick={startDiagnostics}
+                disabled={!decision.trim()}
+                className="w-full py-8 bg-primary text-white font-heading font-black uppercase tracking-[0.3em] rounded-[2.5rem] hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-4 shadow-xl shadow-primary/20 disabled:opacity-30"
+              >
+                Start Diagnostic Scan <ArrowRight className="w-6 h-6" />
+              </button>
+            </div>
+          </motion.div>
         )}
-        <div className="flex justify-center gap-8 mt-6">
-          <div className="flex items-center gap-2 opacity-30">
-            <Shield className="w-3 h-3 text-accent" />
-            <span className="text-[8px] font-black uppercase tracking-[0.2em]">Values Alignment Active</span>
-          </div>
-          <div className="flex items-center gap-2 opacity-30">
-            <Zap className="w-3 h-3 text-accent" />
-            <span className="text-[8px] font-black uppercase tracking-[0.2em]">Fear Filter v2.0</span>
-          </div>
-        </div>
-      </div>
+
+        {step === 'clarity-pre' && (
+          <motion.div
+            key="clarity-pre"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white p-8 md:p-16 rounded-[3rem] border border-border shadow-sm text-center"
+          >
+            <div className="w-20 h-20 bg-soft rounded-3xl flex items-center justify-center mx-auto mb-10">
+              <AlertTriangle className="w-10 h-10 text-primary" />
+            </div>
+            <h2 className="text-4xl md:text-5xl font-heading font-black uppercase tracking-tighter leading-tight mb-6">
+              How <span className="text-primary italic font-cursive normal-case px-2">confused</span> <br/> are you right now?
+            </h2>
+            <p className="text-[10px] font-black text-foreground/40 uppercase tracking-[0.3em] mb-12">Select your current mental fog level (1 = Clear, 10 = Paralysis)</p>
+            
+            <div className="flex flex-wrap justify-center gap-3 mb-16">
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+                <button
+                  key={num}
+                  onClick={() => setClarityBefore(num)}
+                  className={`w-12 h-12 md:w-16 md:h-16 rounded-2xl border font-heading font-black text-xl transition-all ${
+                    clarityBefore === num 
+                    ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20 scale-110' 
+                    : 'bg-soft border-border text-foreground/40 hover:border-primary/30'
+                  }`}
+                >
+                  {num}
+                </button>
+              ))}
+            </div>
+
+            <button 
+              onClick={() => setStep('diagnostic')}
+              className="w-full py-8 bg-primary text-white font-heading font-black uppercase tracking-[0.3em] rounded-[2.5rem] hover:scale-[1.02] transition-all flex items-center justify-center gap-4"
+            >
+              Start Diagnostics <ArrowRight className="w-6 h-6" />
+            </button>
+          </motion.div>
+        )}
+
+        {step === 'diagnostic' && (
+          <motion.div
+            key="diag"
+            initial={{ opacity: 0, scale: 0.98 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="space-y-12"
+          >
+            <div className="text-center mb-12 md:mb-16">
+              <h2 className="text-4xl md:text-5xl font-heading font-black uppercase tracking-tighter leading-[0.9] mb-4 text-foreground px-4">Deep Dive Questions</h2>
+              <p className="text-foreground/60 font-bold uppercase tracking-[0.3em] text-[10px] px-6">Answer these to help your mentor understand your thinking better</p>
+            </div>
+
+
+            <div className="space-y-10">
+              {questions?.map((q, i) => (
+                <div key={i} className="bg-white border border-border p-8 md:p-12 rounded-[2.5rem] md:rounded-[3.5rem] shadow-sm hover:shadow-md transition-all">
+                  <h3 className="text-xl md:text-2xl font-heading font-black text-foreground tracking-tight mb-8 md:mb-10 leading-[1.1]">
+                    <span className="text-primary/40 mr-4 font-mono">{i+1}.</span> {q.question}
+                  </h3>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {q.options.map((opt, j) => (
+                      <button
+                        key={j}
+                        onClick={() => setAnswers({...answers, [i]: opt})}
+                        className={`p-8 rounded-2xl border text-left transition-all font-bold text-[10px] uppercase tracking-[0.2em] ${
+                          answers[i] === opt 
+                          ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20' 
+                          : 'bg-soft border-border text-foreground/60 hover:border-primary/30'
+                        }`}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <button 
+              onClick={getVerdict}
+              disabled={Object.keys(answers).length < questions.length}
+              className="w-full py-10 bg-primary text-white font-heading font-black uppercase tracking-[0.3em] rounded-[3rem] hover:scale-[1.02] transition-all shadow-2xl shadow-primary/30 disabled:opacity-30"
+            >
+              Generate Final Verdict
+            </button>
+          </motion.div>
+        )}
+
+        {step === 'results' && result && (
+          <motion.div
+            key="results"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-12"
+          >
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 px-2 md:px-0">
+              <section className="bg-white p-8 md:p-16 rounded-[3rem] md:rounded-[4rem] border border-border shadow-sm relative overflow-hidden group">
+                <p className="text-[10px] font-black text-primary uppercase tracking-[0.3em] mb-8 md:mb-12">Neural Analysis Verdict</p>
+                <div className="space-y-8 md:space-y-12 relative z-10">
+                  <div>
+                    <h4 className="text-[9px] font-black text-foreground/40 uppercase tracking-[0.3em] mb-4">Logic Reasoning</h4>
+                    <p className="text-xl md:text-2xl font-heading font-bold text-foreground leading-[1.2]">{result.logicReasoning}</p>
+                  </div>
+                  <div className={`p-6 md:p-10 rounded-[2rem] md:rounded-[2.5rem] border ${result.verdict?.includes('NO-GO') ? 'bg-red-50 border-red-100 text-red-600' : result.verdict?.includes('PIVOT') ? 'bg-orange-50 border-orange-100 text-orange-600' : 'bg-green-50 border-green-100 text-green-600'}`}>
+                    <h4 className="text-[9px] font-black uppercase tracking-[0.3em] mb-4 md:mb-6 opacity-60">Final Verdict</h4>
+                    <p className="text-4xl md:text-5xl font-heading font-black tracking-tighter uppercase leading-[0.8]">
+                      {result.verdict}
+                    </p>
+                  </div>
+                </div>
+              </section>
+
+              <section className="bg-white p-8 md:p-16 rounded-[3rem] md:rounded-[4rem] border border-border space-y-10 md:space-y-12">
+
+                {/* Success Probability */}
+                {result.successProbability !== undefined && (
+                  <div>
+                    <div className="flex justify-between items-center mb-6">
+                      <h4 className="text-[9px] font-black text-foreground/40 uppercase tracking-[0.3em] flex items-center gap-2">
+                         Chance of Success
+                      </h4>
+                      <span className="text-3xl font-heading font-black text-foreground leading-none">{result.successProbability}%</span>
+                    </div>
+                    <div className="h-2 bg-soft rounded-full overflow-hidden">
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        whileInView={{ width: `${result.successProbability}%` }}
+                        className={`h-full ${result.successProbability > 70 ? 'bg-green-500' : result.successProbability > 40 ? 'bg-orange-500' : 'bg-red-500'}`}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Expert Perspective */}
+                {result.expertPerspective && (
+                  <div className="p-8 bg-soft rounded-3xl border border-border">
+                     <p className="text-[9px] font-black text-primary uppercase tracking-[0.3em] mb-4">Expert Mentor Logic</p>
+                     <p className="text-lg text-foreground/80 font-bold leading-snug">"{result.expertPerspective}"</p>
+                  </div>
+                )}
+
+                {/* Ripple Effect */}
+                <div>
+                   <h4 className="text-[9px] font-black text-foreground/40 uppercase tracking-[0.3em] mb-4">The Ripple Effect</h4>
+                   <p className="text-xl font-heading font-bold text-foreground leading-relaxed">"{result.secondOrderEffects || result.fearAnalysis}"</p>
+                </div>
+
+                {/* Next Steps */}
+                <div className="bg-primary p-10 rounded-[3rem] text-white">
+                   <h4 className="text-[9px] font-black uppercase tracking-[0.3em] mb-8 opacity-60">Next Action Steps</h4>
+                   <ul className="space-y-6">
+                     {result.nextSteps?.map((step, idx) => (
+                       <li key={idx} className="text-lg font-heading font-bold flex items-start gap-4 leading-tight">
+                         <span className="opacity-40 text-sm mt-1">0{idx+1}</span>
+                         {step}
+                       </li>
+                     ))}
+                   </ul>
+                </div>
+              </section>
+            </div>
+
+            <div className="bg-white p-12 rounded-[3rem] border border-border text-center">
+               <h3 className="text-2xl font-heading font-black text-foreground uppercase tracking-tight mb-8">How <span className="text-primary italic font-cursive normal-case px-2">clear</span> are you now?</h3>
+               <div className="flex flex-wrap justify-center gap-3">
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
+                    <button
+                      key={num}
+                      onClick={() => saveClarityAfter(num)}
+                      className={`w-10 h-10 md:w-14 md:h-14 rounded-xl border font-heading font-black text-lg transition-all ${
+                        clarityAfter === num 
+                        ? 'bg-primary border-primary text-white shadow-lg shadow-primary/20 scale-110' 
+                        : 'bg-soft border-border text-foreground/40 hover:border-primary/30'
+                      }`}
+                    >
+                      {num}
+                    </button>
+                  ))}
+               </div>
+               {clarityAfter !== null && (
+                 <motion.p 
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="mt-8 text-primary font-bold uppercase tracking-widest text-[10px]"
+                 >
+                   Value Delivered: {Math.max(0, clarityAfter - (10 - clarityBefore))} Logic Points Gained
+                 </motion.p>
+               )}
+            </div>
+
+            <button 
+              onClick={() => { setStep('input'); setDecision(''); setAnswers({}); setResult(null); setCommitted(false); setClarityAfter(null); }}
+              className="w-full py-8 bg-soft border border-border rounded-[2.5rem] text-[10px] font-black uppercase tracking-[0.3em] hover:border-primary transition-all text-foreground/60 hover:text-primary flex items-center justify-center gap-4"
+            >
+              <RefreshCcw className="w-5 h-5" /> Start New Analysis
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

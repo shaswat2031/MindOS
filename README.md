@@ -1,36 +1,49 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Stop Making Decisions You’ll Regret
 
-## Getting Started
+Most people make life decisions based on:
+- 🚩 Pressure
+- 🚩 Confusion
+- 🚩 Overthinking
 
-First, run the development server:
+That’s why they regret them later.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## Meet MindOS (Decision Engine)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+In 5 minutes, you’ll get:
+✔ **Clarity** on what to do
+✔ **Risk breakdown** (What could go wrong?)
+✔ **Regret Analysis** (What will your future self think?)
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+---
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Try it now:
 
-## Learn More
+> “What decision are you struggling with?”
 
-To learn more about Next.js, take a look at the following resources:
+**[ Start Free ]**
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Real Example
 
-## Deploy on Vercel
+> “I used this before quitting my job. Saved me from a huge mistake.”
+> — **Aayush, 24**
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Why it works
+
+Not motivation. Not generic advice.
+**A structured decision system.**
+
+---
+
+## Free to start
+No login required.
+
+---
+
+👉 **Make your next decision smarter.**
+
+---
+*For the full business strategy, see [detail.md](./detail.md)*

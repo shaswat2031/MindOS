@@ -11,7 +11,7 @@ export async function POST(req) {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        "model": "google/gemini-2.0-flash-001", // Or any other model
+        "model": "google/gemma-3-27b:free", // Or any other model
         "messages": [
           {
             "role": "system",

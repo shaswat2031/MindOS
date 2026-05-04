@@ -34,7 +34,7 @@ export async function POST(req) {
     `;
 
     const completion = await openai.chat.completions.create({
-      model: "google/gemini-2.0-flash-001",
+      model: "nvidia/nemotron-nano-9b-v2:free",
       messages: [{ role: "user", content: prompt }],
       response_format: { type: "json_object" }
     });

@@ -1,114 +1,238 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { BarChart, TrendingUp, CheckCircle, AlertTriangle, Target, ArrowUpRight, Sparkles, Zap, Activity } from 'lucide-react';
+import { useMindStore } from '@/lib/store';
+import { 
+  BarChart2, 
+  Zap, 
+  Brain, 
+  Shield, 
+  AlertCircle, 
+  ArrowUpRight, 
+  TrendingUp, 
+  Sparkles, 
+  Loader2,
+  Trophy,
+  MessageSquare,
+  ArrowRight,
+  CheckCircle2
+} from 'lucide-react';
 
-export default function WeeklyReport() {
-  const stats = [
-    { label: 'WEEKLY FOCUS', value: '82', change: '+23%', trend: 'up', color: 'text-accent' },
-    { label: 'RESOLVED LOGS', value: '04', change: 'MAX', trend: 'neutral', color: 'text-purple-400' },
-    { label: 'SYSTEM INTEGRITY', value: '94%', change: '+05%', trend: 'up', color: 'text-growth' },
-  ];
+function TaskItem({ action, index, reportAccent }) {
+  const [isDone, setIsDone] = useState(false);
+  return (
+    <motion.div 
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: index * 0.1 }}
+      onClick={() => setIsDone(!isDone)}
+      className={`group p-8 rounded-[2.5rem] border transition-all cursor-pointer flex items-start gap-6 ${
+        isDone 
+        ? 'bg-soft border-border opacity-50' 
+        : 'bg-white border-border hover:shadow-md'
+      }`}
+    >
+      <div className={`w-6 h-6 rounded-lg border-2 flex-shrink-0 flex items-center justify-center transition-all ${
+        isDone ? 'bg-primary border-primary' : 'border-border'
+      }`}>
+        {isDone && <CheckCircle2 className="w-4 h-4 text-white" />}
+      </div>
+      <div className="flex-1">
+        <p className={`text-xl font-heading font-bold text-foreground leading-tight transition-all ${
+          isDone ? 'line-through decoration-primary decoration-4 opacity-30' : ''
+        }`}>
+          {action}
+        </p>
+      </div>
+    </motion.div>
+  );
+}
+
+export default function WeeklyReport({ userPlan }) {
+  const [report, setReport] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const { userProfile, xp, level } = useMindStore();
+
+  useEffect(() => {
+    if (userPlan === 'Free') {
+      setLoading(false);
+      return;
+    }
+    fetchReport();
+  }, [userPlan]);
+
+  const fetchReport = async () => {
+    try {
+      const res = await fetch('/api/reports/weekly');
+      const data = await res.json();
+      if (res.ok) {
+        setReport(data);
+      } else {
+        setError(data.message || data.error);
+      }
+    } catch (err) {
+      console.error("Failed to fetch report", err);
+      setError("System Connection Error");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDownload = () => {
+    window.print();
+  };
+
+  if (userPlan === 'Free') {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-8 md:p-16 bg-white border border-border rounded-[2.5rem] md:rounded-[4rem] shadow-sm relative overflow-hidden">
+        <div className="w-16 h-16 md:w-20 md:h-20 bg-soft rounded-2xl md:rounded-3xl flex items-center justify-center mb-8 md:mb-10">
+          <Shield className="w-8 h-8 md:w-10 md:h-10 text-primary" />
+        </div>
+        <h2 className="text-3xl md:text-5xl font-heading font-black uppercase tracking-tighter text-foreground mb-6 leading-[0.9]">
+          Neural Meta-Analysis <br/><span className="text-primary italic font-cursive normal-case px-2">Locked</span>
+        </h2>
+        <p className="max-w-xs md:max-w-md text-foreground/60 font-bold uppercase tracking-[0.3em] text-[10px] leading-relaxed mb-10 md:mb-12 px-4">
+          The weekly pattern report aggregates your neural data to find cognitive blind spots. This feature requires Core or Growth access.
+        </p>
+        <button className="w-full md:w-fit px-12 py-5 md:px-16 md:py-6 bg-primary text-white font-heading font-black uppercase tracking-[0.3em] rounded-[1.5rem] md:rounded-[2rem] hover:scale-105 transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-6">
+          Unlock Weekly Insights <Zap className="w-5 h-5 fill-white" />
+        </button>
+      </div>
+    );
+
+  }
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <Loader2 className="w-16 h-16 text-primary animate-spin mb-8" />
+        <p className="text-foreground/60 font-black uppercase tracking-[0.3em] text-[10px]">Aggregating Weekly Insights...</p>
+      </div>
+    );
+  }
+
+  if (error || !report) {
+    return (
+      <div className="text-center py-40 bg-white rounded-[4rem] border border-border">
+        <AlertCircle className="w-16 h-16 text-foreground/20 mx-auto mb-10" />
+        <h2 className="text-4xl font-heading font-black uppercase tracking-tighter text-foreground">Insufficient Data</h2>
+        <p className="text-foreground/60 mt-6 italic font-bold uppercase tracking-[0.2em] text-[10px] px-12">{error || "Log at least 3 decisions this week to generate a meta-analysis."}</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-5xl mx-auto space-y-12">
-      <div className="text-center space-y-6">
-        <div className="inline-flex p-5 bg-accent/10 rounded-3xl border border-accent/20 shadow-[0_0_30px_rgba(34,211,238,0.1)]">
-          <Activity className="w-10 h-10 text-accent" />
-        </div>
-        <h1 className="text-6xl font-black text-white tracking-tighter uppercase italic leading-none">
-          Weekly Performance <br/> <span className="text-accent underline decoration-4 underline-offset-8">Data Stream</span>
-        </h1>
-        <p className="text-slate-500 font-mono text-sm tracking-[0.3em]">LOG_PERIOD :: APR_24_APR_30</p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {stats.map((s, i) => (
-          <div key={i} className="bg-[#0F172A]/50 p-10 rounded-[2.5rem] border border-white/5 shadow-2xl relative group overflow-hidden">
-            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-              <Zap className="w-20 h-20" />
+    <div className="report-container relative space-y-16">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="space-y-16 no-print"
+      >
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 md:gap-10 px-4">
+          <div>
+            <div className="flex items-center gap-3 mb-4">
+               <span className="w-2 h-2 bg-primary rounded-full animate-pulse" />
+               <p className="text-[9px] md:text-[10px] font-black text-foreground/40 uppercase tracking-[0.3em]">Weekly Clarity Review</p>
             </div>
-            <p className="text-[10px] font-black text-slate-500 uppercase tracking-[0.3em] mb-4">{s.label}</p>
-            <p className={`text-6xl font-black italic tracking-tighter mb-2 ${s.color}`}>{s.value}</p>
-            <p className="text-xs font-black text-white/50 uppercase tracking-widest">{s.change} FROM PREV</p>
+            <h2 className="text-4xl md:text-6xl font-heading font-black uppercase tracking-tighter text-foreground leading-[0.85]">
+              How's it going, <br/><span className="text-primary italic font-cursive normal-case px-2">{userProfile?.name?.split(' ')[0]}?</span>
+            </h2>
           </div>
-        ))}
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-        <section className="bg-white/5 p-12 rounded-[3rem] border border-white/5 space-y-10 relative overflow-hidden group">
-          <div className="absolute -top-20 -left-20 w-64 h-64 bg-growth/5 rounded-full blur-3xl group-hover:bg-growth/10 transition-all duration-1000" />
-          <h3 className="text-2xl font-black flex items-center gap-4 uppercase italic tracking-tight text-growth">
-            <TrendingUp className="w-8 h-8" />
-            Core Breakthroughs
-          </h3>
-          <div className="space-y-8 relative z-10">
-            <div className="flex gap-6 items-start">
-              <div className="w-10 h-10 bg-growth/10 border border-growth/20 rounded-2xl flex items-center justify-center flex-shrink-0 mt-1 shadow-[0_0_15px_rgba(74,222,128,0.1)]">
-                <CheckCircle className="w-6 h-6 text-growth stroke-[3px]" />
-              </div>
-              <div>
-                <p className="font-black text-lg uppercase italic tracking-tight mb-2">Primary Decision Finalized</p>
-                <p className="text-slate-400 leading-relaxed italic">Initiated 'Side Hustle' protocol after 92 days of recursive logic loops. System integrity restored.</p>
-              </div>
-            </div>
-            <div className="flex gap-6 items-start">
-              <div className="w-10 h-10 bg-growth/10 border border-growth/20 rounded-2xl flex items-center justify-center flex-shrink-0 mt-1 shadow-[0_0_15px_rgba(74,222,128,0.1)]">
-                <CheckCircle className="w-6 h-6 text-growth stroke-[3px]" />
-              </div>
-              <div>
-                <p className="font-black text-lg uppercase italic tracking-tight mb-2">Neural Consistency Maxed</p>
-                <p className="text-slate-400 leading-relaxed italic">07-day 'Neural Reset' sequence completed. Cognitive clarity increased by 22%.</p>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="bg-danger/5 p-12 rounded-[3rem] border border-danger/10 space-y-10 relative overflow-hidden group">
-          <div className="absolute -top-20 -right-20 w-64 h-64 bg-danger/5 rounded-full blur-3xl group-hover:bg-danger/10 transition-all duration-1000" />
-          <h3 className="text-2xl font-black flex items-center gap-4 uppercase italic tracking-tight text-danger">
-            <AlertTriangle className="w-8 h-8" />
-            Vulnerability Detected
-          </h3>
-          <div className="space-y-6 relative z-10">
-            <div className="p-8 bg-white/5 border border-white/5 rounded-[2rem] hover:bg-white/10 transition-all cursor-pointer group">
-              <p className="text-xs font-black text-danger uppercase tracking-[0.3em] mb-3">Pattern Leak</p>
-              <p className="text-xl font-black text-white italic uppercase tracking-tighter mb-2">"NOT_READY" LOOP</p>
-              <p className="text-sm text-slate-500 leading-relaxed italic">Triggered 4 times during competitive data analysis. Logic filter suggested.</p>
-            </div>
-            <div className="p-8 bg-white/5 border border-white/5 rounded-[2rem] hover:bg-white/10 transition-all cursor-pointer group">
-              <p className="text-xs font-black text-danger uppercase tracking-[0.3em] mb-3">Energy Drain</p>
-              <p className="text-xl font-black text-white italic uppercase tracking-tighter mb-2">THURSDAY_SLUMP</p>
-              <p className="text-sm text-slate-500 leading-relaxed italic">Efficiency drops to 45% post 14:00. Protocol 'Early Reset' required.</p>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      <section className="bg-accent p-12 rounded-[3.5rem] shadow-[0_0_60px_rgba(34,211,238,0.2)] relative overflow-hidden group hover:scale-[1.01] transition-transform duration-500">
-        <div className="relative z-10">
-          <p className="text-xs font-black text-black/50 uppercase tracking-[0.5em] mb-8">NEXT WEEK CRITICAL TARGET</p>
-          <div className="flex flex-col md:flex-row items-start md:items-center gap-10">
-            <div className="p-6 bg-black rounded-[2.5rem] shadow-2xl">
-              <Target className="w-12 h-12 text-accent" />
-            </div>
-            <div>
-              <p className="text-4xl font-black text-black leading-none uppercase italic tracking-tighter mb-4">
-                Execute Mockup <br/> Protocol v1.0
-              </p>
-              <p className="text-black/70 text-lg font-medium max-w-md italic">
-                "Ignore all peer feedback until 80% completion. Bypassing judgment trap is mission critical."
-              </p>
-            </div>
-            <button className="ml-auto p-8 bg-black text-accent rounded-full hover:scale-110 active:scale-95 transition-all shadow-2xl">
-              <ArrowUpRight className="w-10 h-10 stroke-[3px]" />
-            </button>
+          <div className="flex items-center gap-4 md:gap-6">
+             <div className="bg-white border border-border px-8 py-4 md:px-10 md:py-6 rounded-[2rem] md:rounded-[2.5rem] text-center shadow-sm">
+               <p className="text-[8px] md:text-[9px] font-black text-foreground/40 uppercase tracking-[0.3em] mb-2">Weekly Clarity</p>
+               <p className="text-3xl md:text-4xl font-heading font-black text-foreground leading-none">{report.logicScore}%</p>
+             </div>
+             <button 
+              onClick={handleDownload}
+              className="p-5 md:p-6 bg-primary text-white rounded-[1.2rem] md:rounded-[1.5rem] hover:scale-105 transition-all shadow-xl shadow-primary/20"
+             >
+               <ArrowUpRight className="w-5 h-5 md:w-6 md:h-6" />
+             </button>
           </div>
         </div>
-        <div className="absolute -bottom-32 -right-32 p-10 opacity-10 group-hover:rotate-12 transition-transform duration-1000">
-          <Zap className="w-[30rem] h-[30rem] text-black" />
+
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+          {/* Main Insights */}
+          <section className="lg:col-span-8 space-y-12">
+             <div className="bg-white p-8 md:p-16 rounded-[2.5rem] md:rounded-[4rem] border border-border shadow-sm relative overflow-hidden">
+                <div className="relative z-10">
+                   <p className="text-[10px] font-black text-primary uppercase tracking-[0.3em] mb-8 md:mb-12 flex items-center gap-3">
+                     <Sparkles className="w-4 h-4" /> Your Dominant Thinking Style
+                   </p>
+                   <h3 className="text-4xl md:text-7xl font-heading font-black text-foreground uppercase tracking-tighter leading-[0.9] mb-8 md:mb-12">
+                     {report.dominantBias}
+                   </h3>
+                   <div className="p-8 md:p-10 bg-soft rounded-[2rem] md:rounded-[2.5rem] border border-border italic text-xl md:text-2xl font-heading font-bold text-foreground/80 leading-snug mb-12 md:mb-16">
+                     "{report.metaInsight}"
+                   </div>
+                   
+                   <div className="space-y-6 md:space-y-8 mt-12 md:mt-16 border-t border-border pt-12 md:pt-16">
+                      <h4 className="text-[10px] font-black text-foreground/40 uppercase tracking-[0.3em] mb-8 md:mb-10">Weekly Deep Analysis</h4>
+                      {report.detailedSummary?.split('\n').map((p, i) => (
+                        <p key={i} className="text-lg md:text-xl font-heading font-bold text-foreground/60 leading-relaxed">
+                          {p}
+                        </p>
+                      ))}
+                   </div>
+
+                   <div className="flex items-center gap-6 text-primary font-heading font-black uppercase tracking-[0.2em] text-[10px] mt-12 md:mt-16 px-4">
+                     <Trophy className="w-5 h-5" /> {report.growthMetric}
+                   </div>
+                </div>
+             </div>
+
+
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {[
+                  { label: 'Thinking Clarity', value: report.logicScore + '%', icon: Shield },
+                  { label: 'Decision Rank', value: level === 1 ? 'Seeker' : 'Expert', icon: Trophy },
+                ].map((stat) => (
+                  <div key={stat.label} className="bg-white border border-border p-10 rounded-[3rem] flex items-center gap-8 shadow-sm">
+                    <div className="w-16 h-16 bg-soft rounded-[1.5rem] flex items-center justify-center text-primary">
+                      <stat.icon className="w-8 h-8" />
+                    </div>
+                    <div>
+                      <p className="text-[9px] font-black text-foreground/40 uppercase tracking-[0.3em] mb-2">{stat.label}</p>
+                      <p className="text-3xl font-heading font-black text-foreground leading-none">{stat.value}</p>
+                    </div>
+                  </div>
+                ))}
+             </div>
+          </section>
+
+          {/* Action Steps Sidebar */}
+          <section className="lg:col-span-4 space-y-12">
+             <div className="bg-primary p-8 md:p-12 rounded-[2.5rem] md:rounded-[4rem] shadow-2xl shadow-primary/20 flex flex-col h-full text-white">
+                <div className="flex items-center gap-4 mb-10 md:mb-12">
+                  <div className="w-10 h-10 bg-white/10 rounded-xl flex items-center justify-center">
+                    <Zap className="w-5 h-5" />
+                  </div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.3em] opacity-60">Next Week's Plan</p>
+                </div>
+                
+                <div className="flex-1 space-y-6 md:space-y-8 mb-12 md:mb-16 text-black">
+                  {report.actionPlan?.map((action, i) => (
+                    <TaskItem key={i} action={action} index={i} />
+                  ))}
+                </div>
+
+                <div className="p-6 md:p-8 bg-white/5 rounded-[1.5rem] md:rounded-[2rem] border border-white/10 flex items-center gap-4 md:gap-6">
+                  <div className="w-10 h-10 md:w-12 md:h-12 bg-white/10 rounded-full flex-shrink-0 flex items-center justify-center opacity-40">
+                    <MessageSquare className="w-4 h-4 md:w-5 md:h-5" />
+                  </div>
+                  <p className="text-[10px] md:text-[11px] font-heading font-bold uppercase leading-tight italic opacity-60">
+                    "Success is the sum of small choices."
+                  </p>
+                </div>
+             </div>
+
+          </section>
         </div>
-      </section>
+      </motion.div>
     </div>
   );
 }
