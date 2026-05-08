@@ -38,8 +38,14 @@ export default function DailyCheckIn({ onClose }) {
         body: JSON.stringify({ question, answer })
       });
       if (res.ok) {
+        const data = await res.json();
         setCompleted(true);
         addXP(20);
+        // Update lastCheckIn locally to prevent modal from reappearing
+        const { userProfile, setUserProfile } = useMindStore.getState();
+        if (userProfile) {
+          setUserProfile({ ...userProfile, lastCheckIn: new Date().toISOString() });
+        }
         setTimeout(() => onClose(), 2000);
       }
     } catch (err) {

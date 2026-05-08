@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, Briefcase, Heart, Clock, Calendar, Save, Loader2, Sparkles, UserCircle, Users, Zap } from 'lucide-react';
+import { User as UserIcon, Briefcase, Heart, Clock, Calendar, Save, Loader2, Sparkles, UserCircle, Users, Zap } from 'lucide-react';
 import { useMindStore } from '@/lib/store';
+import { toast } from 'sonner';
 
 export default function UserProfile() {
   const { userProfile, setUserProfile } = useMindStore();
@@ -47,8 +48,7 @@ export default function UserProfile() {
       const data = await res.json();
       if (res.ok) {
         setUserProfile(data);
-        setSuccess(true);
-        setTimeout(() => setSuccess(false), 3000);
+        toast.success('Identity Matrix Synchronized');
       }
     } catch (err) {
       console.error(err);
@@ -57,8 +57,15 @@ export default function UserProfile() {
     }
   };
 
-  const InputWrapper = ({ icon: Icon, label, children }) => (
-    <div className="bg-white p-8 rounded-[2.5rem] border border-border hover:shadow-xl transition-all">
+  const InputWrapper = ({ icon: Icon, label, children, delay = 0 }) => (
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      transition={{ delay }}
+      viewport={{ once: true }}
+      whileHover={{ scale: 1.02, y: -5 }}
+      className="bg-white p-8 rounded-[2.5rem] border border-border hover:shadow-xl transition-all"
+    >
       <div className="flex items-center gap-4 mb-6">
         <div className="w-10 h-10 bg-primary/5 rounded-xl flex items-center justify-center text-primary">
           <Icon className="w-5 h-5" />
@@ -66,7 +73,7 @@ export default function UserProfile() {
         <span className="text-[10px] font-black text-foreground/40 uppercase tracking-[0.2em]">{label}</span>
       </div>
       {children}
-    </div>
+    </motion.div>
   );
 
   return (
@@ -162,7 +169,7 @@ export default function UserProfile() {
             </select>
           </InputWrapper>
 
-          <InputWrapper icon={Clock} label="Social Media Drain (Hours/Day)">
+          <InputWrapper icon={Clock} label="Social Media Drain (Hours/Day)" delay={0.6}>
             <input 
               type="number" 
               value={formData.socialMediaTime}

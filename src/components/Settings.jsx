@@ -20,6 +20,7 @@ import {
   LogOut
 } from 'lucide-react';
 import { SignOutButton } from '@clerk/nextjs';
+import { toast } from 'sonner';
 
 
 const SettingToggle = ({ label, description, enabled, onToggle }) => (
@@ -41,7 +42,8 @@ const SettingToggle = ({ label, description, enabled, onToggle }) => (
 );
 
 export default function Settings() {
-  const { userProfile } = useMindStore();
+  const { userProfile, setActiveTab } = useMindStore();
+
   const [stats, setStats] = useState({ totalAudited: 0, averageLogicScore: 0, memberSince: '2026' });
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
@@ -70,27 +72,33 @@ export default function Settings() {
   };
 
   const handleDeleteHistory = async () => {
-    if (!confirm("Are you sure? This will permanently wipe all your decision logs. This cannot be undone.")) return;
-    
-    setDeleting(true);
-    try {
-      const res = await fetch('/api/user/delete-history', { method: 'POST' });
-      const data = await res.json();
-      if (res.ok) {
-        alert(data.message);
-        setStats({ ...stats, totalAudited: 0, averageLogicScore: 0 });
-      }
-    } catch (err) {
-      alert("Failed to wipe history.");
-    } finally {
-      setDeleting(false);
-    }
+    toast.error('Are you sure?', {
+      description: 'This will permanently wipe all your decision logs.',
+      action: {
+        label: 'Wipe All',
+        onClick: async () => {
+          setDeleting(true);
+          try {
+            const res = await fetch('/api/user/delete-history', { method: 'POST' });
+            const data = await res.json();
+            if (res.ok) {
+              toast.success(data.message);
+              setStats({ ...stats, totalAudited: 0, averageLogicScore: 0 });
+            }
+          } catch (err) {
+            toast.error("Failed to wipe history.");
+          } finally {
+            setDeleting(false);
+          }
+        },
+      },
+    });
   };
 
   return (
-    <div className="max-w-4xl mx-auto pb-20 px-4">
-      <div className="mb-16">
-        <div className="flex items-center gap-3 mb-4">
+    <div className="max-w-4xl mx-auto pb-10 px-4">
+      <div className="mb-8">
+        <div className="flex items-center gap-3 mb-2">
            <span className="w-2 h-2 bg-primary rounded-full animate-pulse" />
            <p className="text-[10px] font-black text-foreground/40 uppercase tracking-[0.3em]">System Preferences</p>
         </div>
@@ -163,7 +171,7 @@ export default function Settings() {
         {/* Action Items */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <button 
-            onClick={() => alert("Billing Ledger is being synced with your bank. Available in v2.5.")}
+            onClick={() => setActiveTab('billing')}
             className="group bg-white border border-border p-8 md:p-10 rounded-[2.5rem] md:rounded-[3.5rem] text-left hover:border-primary transition-all shadow-sm"
           >
 
@@ -174,8 +182,9 @@ export default function Settings() {
               <ChevronRight className="w-5 h-5 text-foreground/10 group-hover:text-primary transition-all" />
             </div>
             <h4 className="text-xl font-heading font-black text-foreground uppercase tracking-tight mb-2">Billing Ledger</h4>
-            <p className="text-[10px] font-bold text-foreground/40 uppercase tracking-widest">Manage your {userProfile?.plan} subscription.</p>
+            <p className="text-[10px] font-bold text-foreground/40 uppercase tracking-widest">Manage your {userProfile?.plan || 'Free'} subscription.</p>
           </button>
+
 
           <button 
             onClick={handleDeleteHistory}
@@ -194,17 +203,16 @@ export default function Settings() {
           </button>
         </div>
 
-        {/* Logout Section */}
-        <div className="pt-8 border-t border-border mt-12">
+        <div className="pt-4 border-t border-border mt-4">
           <SignOutButton redirectUrl="/">
-            <button className="w-full flex items-center justify-center gap-4 py-6 bg-foreground text-white rounded-[2.5rem] hover:bg-primary transition-all group">
+            <button className="w-full flex items-center justify-center gap-4 py-4 bg-foreground text-white rounded-[2rem] hover:bg-primary transition-all group">
               <LogOut className="w-5 h-5 group-hover:-translate-x-1 transition-transform" />
               <span className="text-xs font-heading font-black uppercase tracking-[0.3em]">Terminate Session / Logout</span>
             </button>
           </SignOutButton>
         </div>
 
-        <div className="text-center pt-8">
+        <div className="text-center pt-4">
           <p className="text-[9px] font-black text-foreground/20 uppercase tracking-[1em]">MindOS Neural Specification v2.4.0</p>
         </div>
       </div>

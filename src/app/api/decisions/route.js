@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { currentUser } from '@clerk/nextjs/server';
+import { auth, currentUser } from '@clerk/nextjs/server';
 import { Decision } from '@/lib/models';
 import dbConnect from '@/lib/mongodb';
 import OpenAI from 'openai';
@@ -12,9 +12,10 @@ const openai = new OpenAI({
 export async function POST(req) {
   try {
     const { question, context } = await req.json();
+    const { userId } = await auth();
+    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    
     const user = await currentUser();
-
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
     await dbConnect();
 
@@ -42,7 +43,7 @@ export async function POST(req) {
     const analysis = JSON.parse(completion.choices[0].message.content);
 
     const newDecision = await Decision.create({
-      userId: user.id,
+      userId: userId,
       question,
       context,
       analysis
@@ -56,11 +57,11 @@ export async function POST(req) {
 
 export async function GET(req) {
   try {
-    const user = await currentUser();
-    if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-
+    const { userId } = await auth();
+    if (!userId) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    
     await dbConnect();
-    const decisions = await Decision.find({ userId: user.id }).sort({ createdAt: -1 });
+    const decisions = await Decision.find({ userId: userId }).sort({ createdAt: -1 });
 
     return NextResponse.json(decisions);
   } catch (error) {

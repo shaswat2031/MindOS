@@ -29,6 +29,9 @@ const UserProfileSchema = new mongoose.Schema({
   fitnessLevel: String,
   workLoad: String,
   socialMediaTime: Number,
+  subscriptionStartedAt: { type: Date, default: Date.now },
+  nextBillingDate: { type: Date, default: () => new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) },
+  pendingDowngradeTo: { type: String, enum: ['Free', 'Elite', 'Growth'], default: null },
   createdAt: { type: Date, default: Date.now },
 });
 
@@ -135,3 +138,22 @@ WeeklyReportSchema.index({ userId: 1, weekIdentifier: 1 }, { unique: true });
 // Compound index to ensure one report per user per week
 
 export const WeeklyReport = mongoose.models.WeeklyReport || mongoose.model('WeeklyReport', WeeklyReportSchema);
+
+const FamilyCouncilSchema = new mongoose.Schema({
+  ownerId: { type: String, required: true },
+  decisionTitle: { type: String, required: true },
+  context: String,
+  inviteCode: { type: String, unique: true, required: true },
+  opinions: [{
+    relation: String,
+    opinion: String,
+    biasDetected: [String],
+    submittedAt: { type: Date, default: Date.now }
+  }],
+  status: { type: String, enum: ['open', 'closed'], default: 'open' },
+  expiresAt: { type: Date, required: true },
+  analysis: Object, // The de-biased report generated after 24 hours
+  createdAt: { type: Date, default: Date.now },
+});
+
+export const FamilyCouncil = mongoose.models.FamilyCouncil || mongoose.model('FamilyCouncil', FamilyCouncilSchema);

@@ -20,11 +20,14 @@ export const useMindStore = create(
       badges: [],
       circles: [],
       growthCircle: null,
+      activeTab: 'coach',
       
       // Actions
+      setActiveTab: (tab) => set({ activeTab: tab }),
       setUserProfile: (profile) => set((state) => ({ 
         userProfile: { ...state.userProfile, ...profile } 
       })),
+
       setOnboardingComplete: (status) => set({ onboardingComplete: status }),
       setOnboardingAnswers: (answers) => set({ onboardingAnswers: answers }),
       

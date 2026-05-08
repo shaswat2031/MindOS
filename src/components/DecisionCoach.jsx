@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Terminal, Zap, Shield, ArrowRight, Loader2, RefreshCcw, CheckCircle2, AlertTriangle, Brain, Sparkles, TrendingUp, Circle, Box } from 'lucide-react';
 import { useMindStore } from '@/lib/store';
 import dynamic from 'next/dynamic';
+import { toast } from 'sonner';
 
 const DecisionSimulator = dynamic(() => import('./DecisionSimulator'), { 
   ssr: false,
@@ -18,7 +19,10 @@ const DecisionSimulator = dynamic(() => import('./DecisionSimulator'), {
   )
 });
 
+import { SpotlightCard } from '@/components/ui/SpotlightCard';
+
 export default function DecisionCoach() {
+
   const { userProfile, addXP } = useMindStore();
   const [step, setStep] = useState('input'); // 'input', 'diagnostic', 'results'
   const [decision, setDecision] = useState('');
@@ -54,11 +58,11 @@ export default function DecisionCoach() {
         setQuestions(data.questions);
         setStep('clarity-pre');
       } else {
-        alert("Neural Analysis Error: " + (data.error || "Please try again shortly."));
+        toast.error("Neural Analysis Error", { description: data.error || "Please try again shortly." });
       }
     } catch (err) {
       console.error("Failed to generate questions", err);
-      alert("System Connection Error. Please retry.");
+      toast.error("System Connection Error", { description: "Please check your connectivity and retry." });
     } finally {
       setLoading(false);
     }
@@ -130,7 +134,7 @@ export default function DecisionCoach() {
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
         <Loader2 className="w-16 h-16 text-primary animate-spin mb-8" />
         <h2 className="text-3xl font-heading font-black uppercase tracking-tighter text-foreground/40 animate-pulse">
-          {step === 'input' ? 'Synthesizing Decision Matrix...' : 'Calculating Logic Verdict...'}
+          {step === 'input' ? 'Analyzing Perspective...' : 'Finding the Truth...'}
         </h2>
       </div>
     );
@@ -153,10 +157,10 @@ export default function DecisionCoach() {
                 <div>
                   <div className="flex items-center gap-2 px-3 py-1 bg-soft border border-border rounded-full w-fit mb-6">
                     <div className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
-                    <span className="text-[9px] font-black text-foreground/60 uppercase tracking-[0.2em]">Smart Coaching v3.0</span>
+                    <span className="text-[9px] font-black text-foreground/60 uppercase tracking-[0.2em]">Smart Guidance v3.0</span>
                   </div>
                   <h2 className="text-4xl md:text-5xl font-heading font-black uppercase tracking-tighter leading-[0.9] text-foreground">
-                    Let's check <br/> your <span className="text-primary italic font-cursive normal-case px-2">choice</span>
+                    Let's explore <br/> your <span className="text-primary italic font-cursive normal-case px-2">choice</span>
                   </h2>
 
                 </div>
@@ -170,40 +174,45 @@ export default function DecisionCoach() {
               <textarea 
                 value={decision}
                 onChange={(e) => setDecision(e.target.value)}
-                placeholder="EX: SHOULD I QUIT MY TECH JOB TO START A ROASTERY?"
+                placeholder="EX: SHOULD I START MY OWN BUSINESS NOW?"
                 className="w-full h-48 md:h-64 bg-soft border border-border rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-10 text-xl md:text-2xl font-heading font-bold tracking-tight text-foreground placeholder:text-foreground/30 outline-none focus:border-primary transition-all mb-12 resize-none"
               />
 
 
               <div className="mb-12">
-                <p className="text-[10px] font-black text-foreground/60 uppercase tracking-[0.3em] mb-6">Select AI Mentor Persona</p>
+                <p className="text-[10px] font-black text-foreground/60 uppercase tracking-[0.3em] mb-6">Select Your Mentor</p>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {PERSONAS.map((p) => {
                     const isLocked = p.id !== 'Pragmatist' && userProfile?.plan !== 'Growth';
                     return (
-                      <button
+                      <SpotlightCard
                         key={p.id}
-                        onClick={() => !isLocked && setPersona(p.id)}
-                        className={`p-8 rounded-3xl border text-left transition-all relative group ${
+                        className={`rounded-3xl border transition-all relative group ${
                           persona === p.id 
                           ? 'bg-primary border-primary text-white shadow-xl' 
                           : 'bg-white border-border text-foreground/60 hover:border-primary/50'
                         } ${isLocked ? 'opacity-40 cursor-not-allowed' : ''}`}
                       >
-                        <div className={`mb-4 transition-colors ${persona === p.id ? 'text-white' : 'text-primary'}`}>
-                          {p.icon}
-                        </div>
-                        <div className="font-heading font-black uppercase text-[10px] tracking-[0.2em] mb-1">{p.name}</div>
-                        <div className={`text-[9px] font-bold ${persona === p.id ? 'text-white/80' : 'text-foreground/40'}`}>{p.desc}</div>
-                        {isLocked && (
-                          <div className="absolute top-4 right-4">
-                            <Shield className="w-3 h-3 text-foreground/40" />
+                        <button
+                          onClick={() => !isLocked && setPersona(p.id)}
+                          className="w-full h-full p-8 text-left"
+                        >
+                          <div className={`mb-4 transition-colors ${persona === p.id ? 'text-white' : 'text-primary'}`}>
+                            {p.icon}
                           </div>
-                        )}
-                      </button>
+                          <div className="font-heading font-black uppercase text-[10px] tracking-[0.2em] mb-1">{p.name}</div>
+                          <div className={`text-[9px] font-bold ${persona === p.id ? 'text-white/80' : 'text-foreground/40'}`}>{p.desc}</div>
+                          {isLocked && (
+                            <div className="absolute top-4 right-4">
+                              <Shield className="w-3 h-3 text-foreground/40" />
+                            </div>
+                          )}
+                        </button>
+                      </SpotlightCard>
                     );
                   })}
                 </div>
+
               </div>
 
               <button 
@@ -211,7 +220,7 @@ export default function DecisionCoach() {
                 disabled={!decision.trim()}
                 className="w-full py-8 bg-primary text-white font-heading font-black uppercase tracking-[0.3em] rounded-[2.5rem] hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-4 shadow-xl shadow-primary/20 disabled:opacity-30"
               >
-                Start Diagnostic Scan <ArrowRight className="w-6 h-6" />
+                Begin Deep Dive <ArrowRight className="w-6 h-6" />
               </button>
             </div>
           </motion.div>
@@ -252,7 +261,7 @@ export default function DecisionCoach() {
               onClick={() => setStep('diagnostic')}
               className="w-full py-8 bg-primary text-white font-heading font-black uppercase tracking-[0.3em] rounded-[2.5rem] hover:scale-[1.02] transition-all flex items-center justify-center gap-4"
             >
-              Start Diagnostics <ArrowRight className="w-6 h-6" />
+              Continue <ArrowRight className="w-6 h-6" />
             </button>
           </motion.div>
         )}
@@ -265,8 +274,8 @@ export default function DecisionCoach() {
             className="space-y-12"
           >
             <div className="text-center mb-12 md:mb-16">
-              <h2 className="text-4xl md:text-5xl font-heading font-black uppercase tracking-tighter leading-[0.9] mb-4 text-foreground px-4">Deep Dive Questions</h2>
-              <p className="text-foreground/60 font-bold uppercase tracking-[0.3em] text-[10px] px-6">Answer these to help your mentor understand your thinking better</p>
+              <h2 className="text-4xl md:text-5xl font-heading font-black uppercase tracking-tighter leading-[0.9] mb-4 text-foreground px-4">Deep Reflection</h2>
+              <p className="text-foreground/60 font-bold uppercase tracking-[0.3em] text-[10px] px-6">Think carefully about these perspective-shifting questions</p>
             </div>
 
 
@@ -301,7 +310,7 @@ export default function DecisionCoach() {
               disabled={Object.keys(answers).length < questions.length}
               className="w-full py-10 bg-primary text-white font-heading font-black uppercase tracking-[0.3em] rounded-[3rem] hover:scale-[1.02] transition-all shadow-2xl shadow-primary/30 disabled:opacity-30"
             >
-              Generate Final Verdict
+              Get My Path Forward
             </button>
           </motion.div>
         )}
@@ -315,14 +324,14 @@ export default function DecisionCoach() {
           >
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 md:gap-12 px-2 md:px-0">
               <section className="bg-white p-8 md:p-16 rounded-[3rem] md:rounded-[4rem] border border-border shadow-sm relative overflow-hidden group">
-                <p className="text-[10px] font-black text-primary uppercase tracking-[0.3em] mb-8 md:mb-12">Neural Analysis Verdict</p>
+                <p className="text-[10px] font-black text-primary uppercase tracking-[0.3em] mb-8 md:mb-12">Your Clarity Result</p>
                 <div className="space-y-8 md:space-y-12 relative z-10">
                   <div>
-                    <h4 className="text-[9px] font-black text-foreground/40 uppercase tracking-[0.3em] mb-4">Logic Reasoning</h4>
+                    <h4 className="text-[9px] font-black text-foreground/40 uppercase tracking-[0.3em] mb-4">The core logic</h4>
                     <p className="text-xl md:text-2xl font-heading font-bold text-foreground leading-[1.2]">{result.logicReasoning}</p>
                   </div>
                   <div className={`p-6 md:p-10 rounded-[2rem] md:rounded-[2.5rem] border ${result.verdict?.includes('NO-GO') ? 'bg-red-50 border-red-100 text-red-600' : result.verdict?.includes('PIVOT') ? 'bg-orange-50 border-orange-100 text-orange-600' : 'bg-green-50 border-green-100 text-green-600'}`}>
-                    <h4 className="text-[9px] font-black uppercase tracking-[0.3em] mb-4 md:mb-6 opacity-60">Final Verdict</h4>
+                    <h4 className="text-[9px] font-black uppercase tracking-[0.3em] mb-4 md:mb-6 opacity-60">Final Path</h4>
                     <p className="text-4xl md:text-5xl font-heading font-black tracking-tighter uppercase leading-[0.8]">
                       {result.verdict}
                     </p>
@@ -337,7 +346,7 @@ export default function DecisionCoach() {
                   <div>
                     <div className="flex justify-between items-center mb-6">
                       <h4 className="text-[9px] font-black text-foreground/40 uppercase tracking-[0.3em] flex items-center gap-2">
-                         Chance of Success
+                         Confidence Level
                       </h4>
                       <span className="text-3xl font-heading font-black text-foreground leading-none">{result.successProbability}%</span>
                     </div>
@@ -354,20 +363,20 @@ export default function DecisionCoach() {
                 {/* Expert Perspective */}
                 {result.expertPerspective && (
                   <div className="p-8 bg-soft rounded-3xl border border-border">
-                     <p className="text-[9px] font-black text-primary uppercase tracking-[0.3em] mb-4">Expert Mentor Logic</p>
+                     <p className="text-[9px] font-black text-primary uppercase tracking-[0.3em] mb-4">Mentor Perspective</p>
                      <p className="text-lg text-foreground/80 font-bold leading-snug">"{result.expertPerspective}"</p>
                   </div>
                 )}
 
                 {/* Ripple Effect */}
                 <div>
-                   <h4 className="text-[9px] font-black text-foreground/40 uppercase tracking-[0.3em] mb-4">The Ripple Effect</h4>
+                   <h4 className="text-[9px] font-black text-foreground/40 uppercase tracking-[0.3em] mb-4">Long-term Impact</h4>
                    <p className="text-xl font-heading font-bold text-foreground leading-relaxed">"{result.secondOrderEffects || result.fearAnalysis}"</p>
                 </div>
 
                 {/* Next Steps */}
                 <div className="bg-primary p-10 rounded-[3rem] text-white">
-                   <h4 className="text-[9px] font-black uppercase tracking-[0.3em] mb-8 opacity-60">Next Action Steps</h4>
+                   <h4 className="text-[9px] font-black uppercase tracking-[0.3em] mb-8 opacity-60">Your Action Plan</h4>
                    <ul className="space-y-6">
                      {result.nextSteps?.map((step, idx) => (
                        <li key={idx} className="text-lg font-heading font-bold flex items-start gap-4 leading-tight">
@@ -403,7 +412,7 @@ export default function DecisionCoach() {
                   animate={{ opacity: 1, y: 0 }}
                   className="mt-8 text-primary font-bold uppercase tracking-widest text-[10px]"
                  >
-                   Value Delivered: {Math.max(0, clarityAfter - (10 - clarityBefore))} Logic Points Gained
+                   Clarity Gained: {Math.max(0, clarityAfter - (10 - clarityBefore))} Points
                  </motion.p>
                )}
             </div>
@@ -413,13 +422,13 @@ export default function DecisionCoach() {
                 onClick={() => setShowSimulator(true)}
                 className="w-full py-8 bg-black text-white rounded-[2.5rem] text-[10px] font-black uppercase tracking-[0.3em] hover:bg-zinc-900 transition-all flex items-center justify-center gap-4 border border-white/10"
               >
-                <Box className="w-5 h-5 text-primary" /> Simulate 3D Future
+                <Box className="w-5 h-5 text-primary" /> Visualize Future Path
               </button>
               <button 
                 onClick={() => { setStep('input'); setDecision(''); setAnswers({}); setResult(null); setCommitted(false); setClarityAfter(null); }}
                 className="w-full py-8 bg-soft border border-border rounded-[2.5rem] text-[10px] font-black uppercase tracking-[0.3em] hover:border-primary transition-all text-foreground/60 hover:text-primary flex items-center justify-center gap-4"
               >
-                <RefreshCcw className="w-5 h-5" /> Start New Analysis
+                <RefreshCcw className="w-5 h-5" /> Start New Reflection
               </button>
             </div>
           </motion.div>
