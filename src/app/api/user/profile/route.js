@@ -22,33 +22,42 @@ export async function GET(request) {
     const profile = await User.findOne({ clerkId: userId });
     
     if (profile) {
-      // Process pending downgrades if cycle ended
       const now = new Date();
+      let needsSave = false;
+
+      // Process pending downgrades if cycle ended
       if (profile.pendingDowngradeTo && profile.nextBillingDate && now > profile.nextBillingDate) {
         console.log(`Processing scheduled downgrade for user ${userId} to ${profile.pendingDowngradeTo}`);
         profile.plan = profile.pendingDowngradeTo;
         profile.pendingDowngradeTo = null;
         profile.subscriptionStartedAt = now;
         profile.nextBillingDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
-        await profile.save();
+        needsSave = true;
       }
 
       // Safety check: Ensure nextBillingDate exists for older users
       if (!profile.nextBillingDate) {
         profile.nextBillingDate = new Date(profile.createdAt || Date.now());
         profile.nextBillingDate.setDate(profile.nextBillingDate.getDate() + 30);
+        needsSave = true;
+      }
+
+      if (needsSave) {
         await profile.save();
       }
 
-      return NextResponse.json(profile);
+      return NextResponse.json(profile.toObject());
     }
-
 
     return NextResponse.json({ message: 'New user' });
 
   } catch (error) {
     console.error('Profile API Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Internal Server Error', 
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined 
+    }, { status: 500 });
   }
 }
 

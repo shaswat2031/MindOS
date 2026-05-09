@@ -117,7 +117,7 @@ export default function Settings() {
             </div>
             <div>
               <h3 className="text-2xl font-heading font-black text-foreground uppercase tracking-tight">{userProfile?.name || 'User'}</h3>
-              <p className="text-[10px] font-bold text-primary uppercase tracking-widest">{userProfile?.plan || 'Core'} Member Since {stats.memberSince}</p>
+              <p className="text-[10px] font-bold text-primary uppercase tracking-widest">{userProfile?.plan || 'Elite'} Member Since {stats.memberSince}</p>
             </div>
             <button className="md:ml-auto px-6 py-3 bg-soft border border-border rounded-full text-[9px] font-black uppercase tracking-widest hover:border-primary transition-all">
               Edit Identity

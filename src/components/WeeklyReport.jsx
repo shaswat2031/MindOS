@@ -94,7 +94,7 @@ export default function WeeklyReport({ userPlan }) {
           Neural Meta-Analysis <br/><span className="text-primary italic font-cursive normal-case px-2">Locked</span>
         </h2>
         <p className="max-w-xs md:max-w-md text-foreground/60 font-bold uppercase tracking-[0.3em] text-[10px] leading-relaxed mb-10 md:mb-12 px-4">
-          The weekly pattern report aggregates your neural data to find cognitive blind spots. This feature requires Core or Growth access.
+          The weekly pattern report aggregates your neural data to find cognitive blind spots. This feature requires Elite or Growth access.
         </p>
         <button className="w-full md:w-fit px-12 py-5 md:px-16 md:py-6 bg-primary text-white font-heading font-black uppercase tracking-[0.3em] rounded-[1.5rem] md:rounded-[2rem] hover:scale-105 transition-all shadow-xl shadow-primary/20 flex items-center justify-center gap-6">
           Unlock Weekly Insights <Zap className="w-5 h-5 fill-white" />

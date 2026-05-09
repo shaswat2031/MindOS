@@ -22,7 +22,7 @@ export async function GET(req) {
     if (!profile || profile.plan === 'Free') {
       return NextResponse.json({
         error: 'Feature Locked',
-        message: 'Weekly Pattern Reports require a Core or Growth subscription.'
+        message: 'Weekly Pattern Reports require an Elite or Growth subscription.'
       }, { status: 403 });
     }
 
