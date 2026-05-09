@@ -1,6 +1,5 @@
-import { StateGraph, END } from "@langchain/langgraph";
+import { StateGraph, END, Annotation } from "@langchain/langgraph";
 import { ChatOpenAI } from "@langchain/openai";
-import { Annotation } from "@langchain/core/utils/annotation";
 
 // Initialize LLM via OpenRouter
 const llm = new ChatOpenAI({

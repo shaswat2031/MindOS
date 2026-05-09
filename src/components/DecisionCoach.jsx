@@ -20,6 +20,7 @@ const DecisionSimulator = dynamic(() => import('./DecisionSimulator'), {
 });
 
 import { SpotlightCard } from '@/components/ui/SpotlightCard';
+import TimeTraveler from './TimeTraveler';
 
 export default function DecisionCoach() {
 
@@ -348,19 +349,6 @@ export default function DecisionCoach() {
               </section>
 
               <section className="bg-white p-8 md:p-16 rounded-[3rem] md:rounded-[4rem] border border-border space-y-10 md:space-y-12">
-
-                  </div>
-                )}
-              </section>
-
-              {/* Time Traveler Projection */}
-              {result.timeTravel && (
-                <div className="md:col-span-2">
-                  <TimeTraveler data={result.timeTravel} />
-                </div>
-              )}
-
-
                 {/* Expert Perspective */}
                 {result.expertPerspective && (
                   <div className="p-8 bg-soft rounded-3xl border border-border">
@@ -388,6 +376,13 @@ export default function DecisionCoach() {
                    </ul>
                 </div>
               </section>
+
+              {/* Time Traveler Projection */}
+              {result.timeTravel && (
+                <div className="lg:col-span-2">
+                  <TimeTraveler data={result.timeTravel} />
+                </div>
+              )}
             </div>
 
             <div className="bg-white p-12 rounded-[3rem] border border-border text-center">
