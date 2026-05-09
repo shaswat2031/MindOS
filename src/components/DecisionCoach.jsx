@@ -72,7 +72,7 @@ export default function DecisionCoach() {
     if (Object.keys(answers).length < questions.length) return;
     setLoading(true);
     try {
-      const res = await fetch('/api/decisions/analyze', {
+      const res = await fetch('/api/decisions/analyze-graph', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
@@ -86,10 +86,15 @@ export default function DecisionCoach() {
       });
       const data = await res.json();
       setResult(data);
+      if (data.updatedProfile) {
+        setUserProfile({ ...userProfile, mindProfile: data.updatedProfile });
+      }
       setStep('results');
-      addXP(50);
+      addXP(100); // More XP for deep analysis
+
     } catch (err) {
       console.error("Analysis failed", err);
+      toast.error("Reasoning Engine Timeout", { description: "The council took too long to reach consensus. Please try again." });
     } finally {
       setLoading(false);
     }
@@ -133,12 +138,15 @@ export default function DecisionCoach() {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
         <Loader2 className="w-16 h-16 text-primary animate-spin mb-8" />
-        <h2 className="text-3xl font-heading font-black uppercase tracking-tighter text-foreground/40 animate-pulse">
-          {step === 'input' ? 'Analyzing Perspective...' : 'Finding the Truth...'}
+        <h2 className="text-3xl font-heading font-black uppercase tracking-tighter text-foreground/40 animate-pulse text-center">
+          {step === 'clarity-pre' ? (
+            <>Initializing Reasoning Council...<br/><span className="text-sm font-bold opacity-50">Stoic, VC & Pragmatist are reviewing your case.</span></>
+          ) : 'Finding the Truth...'}
         </h2>
       </div>
     );
   }
+
 
   return (
     <div className="max-w-4xl mx-auto pb-20">
@@ -341,24 +349,17 @@ export default function DecisionCoach() {
 
               <section className="bg-white p-8 md:p-16 rounded-[3rem] md:rounded-[4rem] border border-border space-y-10 md:space-y-12">
 
-                {/* Success Probability */}
-                {result.successProbability !== undefined && (
-                  <div>
-                    <div className="flex justify-between items-center mb-6">
-                      <h4 className="text-[9px] font-black text-foreground/40 uppercase tracking-[0.3em] flex items-center gap-2">
-                         Confidence Level
-                      </h4>
-                      <span className="text-3xl font-heading font-black text-foreground leading-none">{result.successProbability}%</span>
-                    </div>
-                    <div className="h-2 bg-soft rounded-full overflow-hidden">
-                      <motion.div 
-                        initial={{ width: 0 }}
-                        whileInView={{ width: `${result.successProbability}%` }}
-                        className={`h-full ${result.successProbability > 70 ? 'bg-green-500' : result.successProbability > 40 ? 'bg-orange-500' : 'bg-red-500'}`}
-                      />
-                    </div>
                   </div>
                 )}
+              </section>
+
+              {/* Time Traveler Projection */}
+              {result.timeTravel && (
+                <div className="md:col-span-2">
+                  <TimeTraveler data={result.timeTravel} />
+                </div>
+              )}
+
 
                 {/* Expert Perspective */}
                 {result.expertPerspective && (

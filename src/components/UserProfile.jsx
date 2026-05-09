@@ -191,12 +191,86 @@ export default function UserProfile() {
         </div>
       </form>
 
+      <div className="mt-20">
+        <h3 className="text-3xl font-heading font-black uppercase tracking-tight mb-12">Neural <span className="text-primary italic">Metrics</span></h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+          {/* Focus Level Card */}
+          <div className="bg-white p-10 rounded-[3.5rem] border border-border relative overflow-hidden shadow-sm">
+            <div className="absolute top-0 right-0 p-8 opacity-5">
+              <Zap className="w-32 h-32" />
+            </div>
+            <div className="flex items-center gap-4 mb-8">
+              <div className="w-12 h-12 rounded-2xl bg-primary/5 text-primary flex items-center justify-center">
+                <Target className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/40">Focus Capacity</h4>
+                <p className="text-2xl font-heading font-black">{userProfile?.mindProfile?.focusLevel || 50}%</p>
+              </div>
+            </div>
+            <div className="h-4 bg-soft rounded-full overflow-hidden">
+              <motion.div 
+                initial={{ width: 0 }}
+                animate={{ width: `${userProfile?.mindProfile?.focusLevel || 50}%` }}
+                className="h-full bg-primary"
+              />
+            </div>
+            <p className="mt-6 text-[9px] font-bold text-foreground/40 uppercase tracking-widest leading-relaxed">
+              Based on your consistency in executing high-stakes decisions.
+            </p>
+          </div>
+
+          {/* Scarcity vs Abundance Card */}
+          <div className="bg-white p-10 rounded-[3.5rem] border border-border relative overflow-hidden shadow-sm">
+             <div className="absolute top-0 right-0 p-8 opacity-5">
+              <Sparkles className="w-32 h-32" />
+            </div>
+            <div className="flex items-center gap-4 mb-8">
+              <div className="w-12 h-12 rounded-2xl bg-orange-50 text-orange-600 flex items-center justify-center">
+                <Zap className="w-6 h-6" />
+              </div>
+              <div>
+                <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-foreground/40">Mindset Polarity</h4>
+                <p className="text-2xl font-heading font-black">{(userProfile?.mindProfile?.scarcityAbundanceScore || 50) > 50 ? 'Abundance' : 'Scarcity'}</p>
+              </div>
+            </div>
+            <div className="h-4 bg-soft rounded-full flex overflow-hidden">
+               <motion.div 
+                initial={{ width: 0 }}
+                animate={{ width: `${userProfile?.mindProfile?.scarcityAbundanceScore || 50}%` }}
+                className={`h-full ${(userProfile?.mindProfile?.scarcityAbundanceScore || 50) > 50 ? 'bg-green-500' : 'bg-orange-500'}`}
+              />
+            </div>
+            <div className="flex justify-between mt-4 text-[8px] font-black uppercase tracking-widest opacity-40">
+              <span>Fear-Driven</span>
+              <span>Growth-Driven</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Neural Insights */}
+        {userProfile?.mindProfile?.insights?.length > 0 && (
+          <div className="mt-12 p-10 bg-soft/50 rounded-[3rem] border border-dashed border-border">
+            <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-foreground/30 mb-8">Latest Neural Observations</h4>
+            <div className="space-y-4">
+              {userProfile.mindProfile.insights.map((insight, i) => (
+                <div key={i} className="flex items-start gap-4">
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary mt-1.5 shrink-0" />
+                  <p className="text-sm font-bold text-foreground/60 leading-relaxed italic">"{insight}"</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+
       <div className="mt-20 p-12 bg-black rounded-[4rem] text-white">
         <h4 className="text-[10px] font-black uppercase tracking-[0.4em] text-white/40 mb-10">Why this matters</h4>
         <p className="text-2xl font-heading font-bold leading-relaxed opacity-80 italic">
           "Your identity is the baseline of all logic. A decision for a student with extreme workload is fundamentally different from a decision for an athlete with high energy. We calibrate your AI to think through YOUR lens."
         </p>
       </div>
+
     </div>
   );
 }

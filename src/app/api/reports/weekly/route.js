@@ -36,9 +36,9 @@ export async function GET(req) {
     const weekIdentifier = `${now.getFullYear()}-${weekNum}`;
 
     // 1. Check for existing cached report
-    const existingReport = await mongoose.models.WeeklyReport.findOne({ 
-      userId: user.id, 
-      weekIdentifier 
+    const existingReport = await mongoose.models.WeeklyReport.findOne({
+      userId: user.id,
+      weekIdentifier
     });
 
     if (existingReport) {
@@ -52,9 +52,9 @@ export async function GET(req) {
     });
 
     if (weeklyDecisions.length < 3) {
-      return NextResponse.json({ 
+      return NextResponse.json({
         error: 'Insufficient Data',
-        message: 'You need at least 3 decisions in your history to generate a Weekly Review. Keep going!' 
+        message: 'You need at least 3 decisions in your history to generate a Weekly Review. Keep going!'
       }, { status: 400 });
     }
 
@@ -91,10 +91,10 @@ export async function GET(req) {
     let rawContent = completion.choices[0].message.content;
     // Basic cleanup for potential AI syntax glitches
     rawContent = rawContent.replace(/[\u0000-\u001F\u007F-\u009F]/g, ""); // Remove control characters
-    
+
     try {
       const finalReport = JSON.parse(rawContent);
-      
+
       // Save for caching
       await WeeklyReport.create({
         userId: user.id,

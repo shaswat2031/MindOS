@@ -2,22 +2,13 @@ import { NextResponse } from 'next/server';
 import { auth } from '@clerk/nextjs/server';
 import { FamilyCouncil } from '@/lib/models';
 import dbConnect from '@/lib/mongodb';
-import OpenAI from 'openai';
-
-const openai = new OpenAI({
-  baseURL: "https://openrouter.ai/api/v1",
-  apiKey: process.env.OPENROUTER_API_KEY,
-});
+import { familyGraph } from '@/lib/langgraph';
 
 export async function GET(req, { params }) {
   try {
     const { id } = await params;
     const { userId } = await auth();
     
-    // We allow anyone to view status if they have the ID? 
-    // Usually only owner can see the full analysis, but maybe members can see status.
-    // For now, let's keep it restricted to the owner for the analysis.
-
     await dbConnect();
     const audit = await FamilyCouncil.findById(id);
 
@@ -31,38 +22,13 @@ export async function GET(req, { params }) {
       audit.status = 'closed';
       
       if (audit.opinions.length > 0) {
-        const prompt = `
-          You are the MindOS Family Mediator. You have collected anonymous opinions from a family regarding a decision.
-          Decision: ${audit.decisionTitle}
-          Context: ${audit.context}
-          
-          Opinions:
-          ${audit.opinions.map(o => `- ${o.relation}: ${o.opinion}`).join('\n')}
-
-          Your task:
-          1. Identify common biases (e.g. status quo bias, emotional blackmail, seniority bias, risk aversion).
-          2. Strip away the emotional pressure and seniority-based authority.
-          3. Synthesize a neutral "Family Consensus" based on objective logic.
-          4. Provide a "Recommended Path" that balances collective concerns with individual growth.
-
-          Output a structured JSON:
-          {
-            "detectedBiases": [string],
-            "consensusSummary": string,
-            "neutralSynthesis": string,
-            "recommendedPath": string,
-            "logicBreakdown": [string]
-          }
-          Output ONLY JSON.
-        `;
-
-        const completion = await openai.chat.completions.create({
-          model: "nvidia/nemotron-nano-9b-v2:free",
-          messages: [{ role: "user", content: prompt }],
-          response_format: { type: "json_object" }
+        console.log("Starting Family Council Mediation via LangGraph...");
+        const result = await familyGraph.invoke({
+          decisionTitle: audit.decisionTitle,
+          context: audit.context,
+          opinions: audit.opinions
         });
-
-        audit.analysis = JSON.parse(completion.choices[0].message.content);
+        audit.analysis = result.analysis;
       } else {
         audit.analysis = { message: "No opinions were collected in the 24-hour window." };
       }
@@ -91,38 +57,14 @@ export async function POST(req, { params }) {
 
     // Manually trigger de-biasing logic
     if (audit.opinions.length > 0) {
-      const prompt = `
-        You are the MindOS Family Mediator. You have collected anonymous opinions from a family regarding a decision.
-        Decision: ${audit.decisionTitle}
-        Context: ${audit.context}
-        
-        Opinions:
-        ${audit.opinions.map(o => `- ${o.relation}: ${o.opinion}`).join('\n')}
-
-        Your task:
-        1. Identify common biases (e.g. status quo bias, emotional blackmail, seniority bias, risk aversion).
-        2. Strip away the emotional pressure and seniority-based authority.
-        3. Synthesize a neutral "Family Consensus" based on objective logic.
-        4. Provide a "Recommended Path" that balances collective concerns with individual growth.
-
-        Output a structured JSON:
-        {
-          "detectedBiases": [string],
-          "consensusSummary": string,
-          "neutralSynthesis": string,
-          "recommendedPath": string,
-          "logicBreakdown": [string]
-        }
-        Output ONLY JSON.
-      `;
-
-      const completion = await openai.chat.completions.create({
-        model: "nvidia/nemotron-nano-9b-v2:free",
-        messages: [{ role: "user", content: prompt }],
-        response_format: { type: "json_object" }
+      console.log("Starting Manual Family Council Mediation via LangGraph...");
+      const result = await familyGraph.invoke({
+        decisionTitle: audit.decisionTitle,
+        context: audit.context,
+        opinions: audit.opinions
       });
-
-      audit.analysis = JSON.parse(completion.choices[0].message.content);
+      
+      audit.analysis = result.analysis;
       audit.status = 'closed';
       await audit.save();
     } else {
@@ -135,3 +77,4 @@ export async function POST(req, { params }) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
