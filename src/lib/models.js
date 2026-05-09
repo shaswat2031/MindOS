@@ -4,7 +4,7 @@ const UserProfileSchema = new mongoose.Schema({
   clerkId: { type: String, required: true, unique: true },
   name: String,
   email: String,
-  plan: { type: String, enum: ['Free', 'Core', 'Growth'], default: 'Free' },
+  plan: { type: String, enum: ['Free', 'Elite', 'Growth'], default: 'Free' },
   planType: { type: String, enum: ['monthly', 'yearly', 'free'], default: 'free' },
   onboardingComplete: { type: Boolean, default: false },
   onboardingAnswers: Object,
